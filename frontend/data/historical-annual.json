@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "description": "Annual-average water-quality context: lake-wide series for 1990\u20132000 plus station-wise annual averages for 2009\u20132012. DO NOT merge them into one continuous station monthly series.",
+    "lakeAnnualSource": "Laguna de Bay: Experiences and Lessons Learned, ILEC, 2006, Table 3, p. 234",
+    "lakeAnnualSourceUrl": "https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf",
+    "stationAnnualSource": "LLDA Annual Water Quality Report 2009\u20132012, BOD p. 9, TSS p. 57",
+    "stationAnnualSourceUrl": "https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf",
+    "typeDistinction": "Lake-wide annual averages (1990\u20132000), specific-station annual averages (2009\u20132012), specific-station monthly readings (2023/2026) have different spatial and temporal aggregation. Trend series are intentionally separated with gaps.",
+    "measurementUnit": "mg/L for both BOD and TSS",
+    "missingValueRule": "null means unpublished in referenced table; there are no interpolated values."
+  },
+  "lakeAnnual": [
+    {
+      "year": 1990,
+      "bod": 2.1,
+      "tss": 56
+    },
+    {
+      "year": 1991,
+      "bod": 2.6,
+      "tss": 46
+    },
+    {
+      "year": 1992,
+      "bod": 2.0,
+      "tss": 56
+    },
+    {
+      "year": 1993,
+      "bod": 1.8,
+      "tss": 34
+    },
+    {
+      "year": 1994,
+      "bod": 1.6,
+      "tss": 67
+    },
+    {
+      "year": 1995,
+      "bod": 1.8,
+      "tss": 82
+    },
+    {
+      "year": 1996,
+      "bod": 1.6,
+      "tss": 48
+    },
+    {
+      "year": 1997,
+      "bod": 2.04,
+      "tss": 89
+    },
+    {
+      "year": 1998,
+      "bod": 2.68,
+      "tss": 47
+    },
+    {
+      "year": 1999,
+      "bod": 1.81,
+      "tss": 39
+    },
+    {
+      "year": 2000,
+      "bod": 1.14,
+      "tss": null
+    }
+  ],
+  "stationAnnual": [
+    {
+      "stationId": "I",
+      "year": 2009,
+      "bod": 1,
+      "tss": 32
+    },
+    {
+      "stationId": "I",
+      "year": 2010,
+      "bod": 6,
+      "tss": 32
+    },
+    {
+      "stationId": "I",
+      "year": 2011,
+      "bod": 3,
+      "tss": 34
+    },
+    {
+      "stationId": "I",
+      "year": 2012,
+      "bod": 2,
+      "tss": 54
+    },
+    {
+      "stationId": "II",
+      "year": 2009,
+      "bod": 1,
+      "tss": 40
+    },
+    {
+      "stationId": "II",
+      "year": 2010,
+      "bod": 5,
+      "tss": 39
+    },
+    {
+      "stationId": "II",
+      "year": 2011,
+      "bod": 2,
+      "tss": 40
+    },
+    {
+      "stationId": "II",
+      "year": 2012,
+      "bod": 1,
+      "tss": 33
+    },
+    {
+      "stationId": "IV",
+      "year": 2009,
+      "bod": 2,
+      "tss": 52
+    },
+    {
+      "stationId": "IV",
+      "year": 2010,
+      "bod": 4,
+      "tss": 14
+    },
+    {
+      "stationId": "IV",
+      "year": 2011,
+      "bod": 2,
+      "tss": 24
+    },
+    {
+      "stationId": "IV",
+      "year": 2012,
+      "bod": 2,
+      "tss": 41
+    },
+    {
+      "stationId": "V",
+      "year": 2009,
+      "bod": 2,
+      "tss": 48
+    },
+    {
+      "stationId": "V",
+      "year": 2010,
+      "bod": 5,
+      "tss": 32
+    },
+    {
+      "stationId": "V",
+      "year": 2011,
+      "bod": 3,
+      "tss": 37
+    },
+    {
+      "stationId": "V",
+      "year": 2012,
+      "bod": 2,
+      "tss": 46
+    },
+    {
+      "stationId": "VIII",
+      "year": 2009,
+      "bod": 2,
+      "tss": 58
+    },
+    {
+      "stationId": "VIII",
+      "year": 2010,
+      "bod": 5,
+      "tss": 57
+    },
+    {
+      "stationId": "VIII",
+      "year": 2011,
+      "bod": 2,
+      "tss": 74
+    },
+    {
+      "stationId": "VIII",
+      "year": 2012,
+      "bod": 2,
+      "tss": 38
+    },
+    {
+      "stationId": "XV",
+      "year": 2012,
+      "bod": 2,
+      "tss": 39
+    },
+    {
+      "stationId": "XVI",
+      "year": 2012,
+      "bod": 2,
+      "tss": 49
+    },
+    {
+      "stationId": "XVII",
+      "year": 2012,
+      "bod": 2,
+      "tss": 37
+    },
+    {
+      "stationId": "XVIII",
+      "year": 2012,
+      "bod": 2,
+      "tss": 67
+    }
+  ]
+}

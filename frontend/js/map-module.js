@@ -1,0 +1,176 @@
+"use strict";
+/*
+ * LakeWatch map module — location-provenance-aware Leaflet station tags.
+ * Published academic coordinates are deliberately differentiated from
+ * approximate LLDA-map-derived locations; neither is certified LLDA GPS.
+ * Shoreline is explicitly NON-INTERACTIVE so it cannot absorb marker clicks.
+ */
+window.LakeWatchMap = (() => {
+  const lakeBounds = [[14.12,121.00],[14.61,121.58]];
+  const esc = v => String(v == null ? "" : v)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  const validRegion = geom => {
+    if (!geom || !(geom.type==='Polygon'||geom.type==='MultiPolygon')) return false;
+    const points=[];
+    function collect(node) {
+      if(Array.isArray(node)&&typeof node[0]==='number')points.push(node);
+      else if(Array.isArray(node))node.forEach(collect);
+    }
+    collect(geom.coordinates);
+    return points.length>=15 && points.some(([lon,lat])=>lon>121.0&&lon<121.6&&lat>14.1&&lat<14.6);
+  };
+  function create({mapElement,onSelectStation,onCoordinate,onStatus,onBoundary}) {
+    let map=null;
+    let boundaryLayer=null;
+    let stationLayer=null;
+    const markers=new Map();
+    let dataset=null;
+    let currentStation='I', currentPeriod='2026-06', currentParameter='do';
+    let showOutline=true, showPins=true, sizeChecked=false;
+
+    const currentParam=()=>dataset?.parameters.find(p=>p.id===currentParameter);
+    const sample=(station)=>station.samples.find(x=>x.period===currentPeriod);
+    const sourceConfidence=s=>s.coordinateAccuracy==='published-research'
+      ? 'Published research coordinates (rounded to 0.001°; not certified LLDA GPS)'
+      : 'Approximate regional placement (not a measured location)';
+    const locationClass=s=>s.appStatus==='archived'?'is-archived':
+      s.coordinateAccuracy==='published-research'?'is-published':'is-approx';
+    function icon(s,selected) {
+      return L.divIcon({
+        className:`lw-station-icon ${locationClass(s)} ${selected?'is-selected':''}`,
+        iconSize:[42,42],iconAnchor:[21,21],popupAnchor:[0,-17],
+        tooltipAnchor:[0,-17],
+        html:`<span class="lw-pin-hit" data-parameter="${esc(currentParameter)}" aria-hidden="true"><span class="lw-pin-tag">${esc(s.id)}</span></span>`
+      });
+    }
+    function popup(s){
+      const p=currentParam(), record=sample(s), raw=record?.values?.[currentParameter];
+      const reported=raw===undefined||raw===null||raw===''?'No reading in selected month':
+        `${String(raw)}${p.unit==='pH units'?'':' '+p.unit}`;
+      return `<div class="station-popup">
+        <strong>Station ${esc(s.id)} — ${esc(s.zone)}</strong>
+        <p><b>Reporting status:</b> ${s.appStatus==='active'?'Recent imported readings':'Archived in this app (no recent imported readings)'}</p>
+        <p>${window.LakeWatchPalette.badge(p.id,p.short)} (${esc(currentPeriod)}): <strong>${esc(reported)}</strong></p>
+        <p class="confidence">${esc(sourceConfidence(s))}</p>
+        <button type="button" class="button button--primary" data-popup-station="${esc(s.id)}">Open station profile</button>
+        <small>Historical LLDA measurements, not real-time data.</small></div>`;
+    }
+    function updateMarkers() {
+      if(!dataset || !map)return;
+      for(const s of dataset.stations){
+        const m=markers.get(s.id);
+        if(!m)continue;
+        m.setIcon(icon(s,s.id===currentStation));
+        m.setPopupContent(popup(s));
+        const p=currentParam(), raw=sample(s)?.values?.[currentParameter];
+        const value=raw===undefined?'No measurement':String(raw);
+        m.setTooltipContent(`Station ${s.id} · ${s.zone} · ${value}${raw===undefined||p.unit==='pH units'?'':' '+p.unit}`);
+        m.setZIndexOffset(s.id===currentStation?1500:0);
+      }
+    }
+    function addStations(){
+      stationLayer=L.layerGroup();
+      for(const s of dataset.stations){
+        const pos=s.position;
+        if(!pos||!Number.isFinite(pos.lat)||!Number.isFinite(pos.lon))continue;
+        // Leaflet markers use keyboard focus, descriptive titles and generous 42px targets.
+        const marker=L.marker([pos.lat,pos.lon],{
+          icon:icon(s,s.id===currentStation),title:`Station ${s.id}: ${s.zone}`,
+          alt:`Station ${s.id} monitoring location`,keyboard:true,
+          riseOnHover:true,riseOffset:1800,bubblingMouseEvents:false
+        });
+        marker.bindPopup(popup(s),{autoPan:true,closeButton:true});
+        marker.bindTooltip(`Station ${s.id}: ${s.zone}`,{direction:'top',opacity:.95});
+        marker.on('click',()=>{
+          currentStation=s.id;
+          onSelectStation(s.id);
+          updateMarkers();
+          marker.openPopup();
+        });
+        marker.addTo(stationLayer);
+        markers.set(s.id,marker);
+      }
+      stationLayer.addTo(map);
+      updateMarkers();
+    }
+    function replaceBoundary(geojson,verified){
+      try{
+        const layer=L.geoJSON(geojson,{
+          interactive:false, // Key fix: geometry does not block station tags.
+          style:{color:verified?'#007e92':'#e2a226',weight:verified?3:2.5,
+            fillColor:verified?'#22b7c5':'#e9ba59',fillOpacity:verified?.11:.12,
+            dashArray:verified?undefined:'7 6',interactive:false}
+        });
+        if(!layer.getLayers().length||!layer.getBounds().isValid())return false;
+        if(boundaryLayer)map.removeLayer(boundaryLayer);
+        boundaryLayer=layer;
+        if(showOutline)layer.addTo(map);
+        // Keep tagged station markers above other geometry even as layers refresh.
+        if(showPins&&stationLayer)stationLayer.bringToFront?.();
+        onBoundary(verified?'OSM lake shoreline loaded. Map markers show coordinate-source confidence.':
+          'Dashed schematic shoreline (approximate); attempting OpenStreetMap boundary…');
+        return true;
+      }catch(err){console.warn('Boundary geometry rejected',err);return false;}
+    }
+    async function loadBoundary(){
+      let fallback=null;
+      try{
+        const response=await fetch('data/lake-schematic.geojson');
+        if(!response.ok)throw Error(`HTTP ${response.status}`);
+        fallback=await response.json();
+        replaceBoundary(fallback,false);
+      }catch(err){onBoundary('Shoreline overlay unavailable; the OpenStreetMap lake is still visible.');}
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),11000);
+      try{
+        const url='https://nominatim.openstreetmap.org/lookup?osm_ids=R79348&format=geojson&polygon_geojson=1&polygon_threshold=0.001';
+        const response=await fetch(url,{signal:controller.signal});
+        if(!response.ok)throw Error(`HTTP ${response.status}`);
+        const body=await response.json();
+        const features=body.type==='FeatureCollection'?body.features:body.type==='Feature'?[body]:[];
+        const good=features.find(x=>validRegion(x.geometry));
+        if(!good)throw Error('No valid shoreline geometry');
+        replaceBoundary(good,true);
+      }catch(err){
+        console.warn('OSM geometry unavailable; schematic remains',err);
+        onBoundary(fallback?'Dashed amber shoreline is a schematic, not a surveyed boundary.':
+          'Shoreline overlay unavailable; use the OpenStreetMap base map.');
+      }finally{clearTimeout(timer);}
+    }
+    function initialize(data,stationId,period,param){
+      dataset=data;currentStation=stationId;currentPeriod=period;currentParameter=param;
+      if(map)return;
+      if(typeof L==='undefined'){onStatus('Leaflet did not load. Check internet access.');return;}
+      map=L.map(mapElement,{zoomControl:true,scrollWheelZoom:true,preferCanvas:false});
+      map.fitBounds(lakeBounds,{padding:[16,16]});
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).on('tileerror',()=>onStatus('Map tiles could not load — check internet connection')).addTo(map);
+      L.control.scale({imperial:false}).addTo(map);
+      map.on('click',({latlng})=>onCoordinate(`${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`));
+      addStations();
+      const verified=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy==='published-research').length;
+      const approx=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy!=='published-research').length;
+      onStatus(`${markers.size} station tags: ${verified} published-coordinate and ${approx} approximate-area pins; ${dataset.stations.length-markers.size} unlocated`);
+      loadBoundary();
+    }
+    function selectStation(id,{zoom=false,openPopup=false}={}){
+      currentStation=id;
+      updateMarkers();
+      const m=markers.get(id);
+      if(m&&map){
+        if(zoom){
+          map.setView(m.getLatLng(),Math.max(map.getZoom(),11),{animate:true});
+        }
+        if(openPopup)m.openPopup();
+      }
+    }
+    function setSelection(period,param){currentPeriod=period;currentParameter=param;updateMarkers();}
+    function showBoundary(v){showOutline=v;if(!map||!boundaryLayer)return;v?boundaryLayer.addTo(map):map.removeLayer(boundaryLayer);}
+    function showStations(v){showPins=v;if(!map||!stationLayer)return;v?stationLayer.addTo(map):map.removeLayer(stationLayer);}
+    function resetView(){map?.fitBounds(lakeBounds,{padding:[16,16]});}
+    function invalidateSize(){if(!map)return;map.invalidateSize();if(!sizeChecked){resetView();sizeChecked=true;}}
+    return {initialize,selectStation,setSelection,showBoundary,showStations,resetView,invalidateSize};
+  }
+  return {create};
+})();

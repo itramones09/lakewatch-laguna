@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="LakeWatch Laguna: MIT final project on visualizing Laguna de Bay water quality." name="description"/>
+<title>LakeWatch Laguna | Water Quality Monitoring</title>
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+<script>
+    // Apply the saved theme before styles load. Defaults to system.
+    (() => {
+      let preference = "system";
+      try {
+        const saved = localStorage.getItem("lakewatch-appearance");
+        if (["light", "dark", "system"].includes(saved)) preference = saved;
+      } catch (_) { /* Storage may be disabled; system remains the default. */ }
+      const osDark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.themePreference = preference;
+      document.documentElement.dataset.theme = preference === "system" ? (osDark ? "dark" : "light") : preference;
+    })();
+  </script>
+<link href="css/style.css" rel="stylesheet"/>
+<script defer="" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer="" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script defer="" src="js/parameter-palette.js"></script>
+<script defer="" src="js/map-module.js"></script>
+<script defer="" src="js/analytics-module.js"></script>
+<script defer="" src="js/historical-module.js"></script>
+<script defer="" src="js/explorer-module.js"></script>
+<script defer="" src="js/theme-module.js"></script>
+<script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script defer="" src="js/api-config.js"></script>
+<script defer="" src="js/api-client.js"></script>
+<script defer="" src="js/live-sync.js"></script>
+<script defer="" src="js/data-manager.js"></script>
+<script defer="" src="js/app.js"></script>
+</head>
+<body><a class="skip-link" href="#app-content">Skip to main content</a>
+
+<header class="site-header">
+<div class="brand">
+<img alt="Official LakeWatch Laguna project logo" class="brand-logo" height="76" src="assets/lakewatch-laguna-logo.png" width="76"/>
+<div class="brand-text">
+<h1>LakeWatch <span>Laguna</span></h1>
+<p class="brand-subtitle">Water Quality Monitoring &amp; Visualization</p>
+</div>
+</div>
+<details class="appearance-settings" id="appearance-settings">
+<summary aria-label="Open appearance settings">
+<span aria-hidden="true">⚙</span> Appearance <span class="appearance-current" id="appearance-current">System</span>
+</summary>
+<div aria-label="Appearance preferences" class="appearance-popover">
+<p class="appearance-heading">Display theme</p>
+<p class="appearance-description">Choose a theme or follow your device.</p>
+<fieldset aria-label="Choose display theme" class="appearance-options">
+<label class="appearance-option"><input name="appearance" type="radio" value="light"/><span aria-hidden="true">☀</span><span>Light<small>Always use light colors</small></span></label>
+<label class="appearance-option"><input name="appearance" type="radio" value="system"/><span aria-hidden="true">◐</span><span>System<small>Follow your device setting</small></span></label>
+<label class="appearance-option"><input name="appearance" type="radio" value="dark"/><span aria-hidden="true">☾</span><span>Dark<small>Always use dark colors</small></span></label>
+</fieldset>
+<p class="appearance-status" id="appearance-status" role="status">Theme is ready.</p>
+</div>
+</details>
+</header>
+<div class="api-status-bar" id="api-status-bar" role="status" aria-live="polite">Connecting to shared readings… <button class="api-refresh-button" id="api-refresh-button" type="button" hidden>Reload latest data</button></div>
+<nav aria-label="Main modules" class="site-nav">
+<button aria-current="page" class="nav-btn is-active" data-view="overview" type="button">Overview</button>
+<button class="nav-btn" data-view="map" type="button">Lake Map</button>
+<button class="nav-btn" data-view="stations" type="button">Monitoring Stations</button>
+<button class="nav-btn" data-view="analytics" type="button">Analytics</button>
+<button class="nav-btn" data-view="explorer" type="button">Data Explorer</button>
+<button class="nav-btn" data-view="manage" type="button">Manage Data</button>
+<button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
+</nav>
+<main class="app-content" id="app-content">
+
+<section aria-labelledby="overview-title" class="view" id="view-overview">
+<div class="page-intro">
+<div>
+
+<h2 id="overview-title">Environmental Overview</h2>
+<p class="module-caption">Choose a parameter or open a module to explore the lake data.</p>
+</div>
+<button class="button button--primary" data-open-view="map" type="button">Explore the Map</button>
+</div>
+<div class="kpi-grid">
+<article class="panel metric-card"><span class="metric-caption">Monitored Lake</span><strong>Laguna de Bay</strong><small>Geographic region</small></article>
+<article class="panel metric-card"><span class="metric-caption">Parameters Reported</span><strong>6</strong><small>DO, BOD, pH, nitrate, phosphate, TSS</small></article>
+<article class="panel metric-card"><span class="metric-caption">Active / Archived Stations</span><strong id="overview-station-count">16 / 3</strong><small id="overview-status-caption">Recent data through June 2026</small></article>
+<article class="panel metric-card"><span class="metric-caption">Historical Readings</span><strong id="overview-reading-count">186</strong><small>Monthly reported values; 69 annual archive values available</small></article>
+</div>
+<section aria-labelledby="overview-color-heading" class="panel parameter-guide">
+<div class="panel-heading"><div><h3 id="overview-color-heading">Water-quality parameter color key</h3><p class="hint">Select a parameter to open its charts.</p></div><span class="tag">Parameter identity · not a safety rating</span></div>
+<div aria-label="Choose a parameter to analyze" class="parameter-shortcuts" id="overview-parameter-guide" role="group"></div>
+<p class="parameter-color-disclaimer">Colors identify parameters, not water-quality ratings.</p>
+</section>
+<div class="overview-grid">
+<article class="panel panel--large">
+<div class="panel-heading"><h3>Explore the data</h3><span class="tag tag--teal">Historical Archive · 1990–2026</span></div>
+
+<div class="feature-list">
+<div><span aria-hidden="true" class="feature-icon">01</span><div><strong>Explore lake geography</strong><p>Select a station, parameter or reporting month on the interactive map.</p></div></div>
+<div><span aria-hidden="true" class="feature-icon">02</span><div><strong>Inspect monitoring stations</strong><p>Search stations and review measurements for the selected month.</p></div></div>
+<div><span aria-hidden="true" class="feature-icon">03</span><div><strong>Interpret measurements</strong><p>Compare stations, inspect trends and examine annual historical data.</p></div></div>
+</div>
+</article>
+<aside class="panel panel--accent"><h3>Quick access</h3>
+<p class="module-caption">Open the view you need.</p>
+<div class="quick-action-stack">
+<button class="button button--full" data-open-view="stations" type="button">Browse stations</button>
+<button class="button button--full" data-open-view="analytics" type="button">View analytics</button>
+<button class="button button--full" data-open-view="explorer" type="button">Explore records</button>
+</div></aside>
+</div>
+</section>
+
+<section aria-labelledby="map-title" class="view" hidden="" id="view-map">
+<div class="page-intro">
+<div><h2 id="map-title">Interactive Lake Map</h2><p class="module-caption">Click a station tag or use the station selector to view readings.</p></div>
+</div>
+<div class="holy-grail">
+<aside aria-label="Map tools" class="panel holy-grail__left">
+<h3>Map Controls</h3>
+<p class="hint">Use the filters to choose which readings appear on station tags.</p>
+<button class="button button--primary button--full" id="reset-map" type="button">Reset Map View</button>
+<label class="form-label" for="map-period">Reporting month</label>
+<select aria-label="Select monitoring month" class="control-select" id="map-period">
+<option value="2023-10">October 2023</option>
+<option value="2023-11">November 2023</option>
+<option value="2023-12">December 2023</option>
+<option selected="" value="2026-06">June 2026</option>
+</select>
+<label class="form-label" for="map-parameter">Parameter shown on markers</label>
+<select aria-label="Choose displayed water quality parameter" class="control-select" id="map-parameter">
+<option value="do">Dissolved Oxygen (mg/L)</option>
+<option value="bod">BOD (mg/L)</option>
+<option value="ph">pH Level</option>
+<option value="nitrate">Nitrate (mg/L)</option>
+<option value="phosphate">Inorganic Phosphate (mg/L)</option>
+<option value="tss">Total Suspended Solids (mg/L)</option>
+</select>
+<div aria-live="polite" class="current-parameter" id="map-current-parameter" role="status"></div>
+<div class="side-divider"></div>
+<label class="toggle-line"><input checked="" id="show-boundary" type="checkbox"/> <span>Show lake boundary</span></label>
+<label class="toggle-line"><input checked="" id="show-stations" type="checkbox"/> <span>Show station markers</span></label>
+<label class="form-label" for="map-station-locator">Go to monitoring station</label>
+<select aria-label="Choose a station to locate on the map" class="control-select" id="map-station-locator"><option value="">Select a station…</option></select>
+<div class="mini-param-guide"><strong>Parameter color key</strong><div aria-label="Colors identify parameter types" class="parameter-legend" id="map-parameter-key"></div><small>Ring color identifies the selected parameter.</small></div>
+<div aria-label="Station coordinate confidence" class="map-marker-legend"><span><i class="legend-dot legend-dot--published"></i> Published research coordinates</span><span><i class="legend-dot legend-dot--approx"></i> Approximate area only</span><span><i class="legend-dot legend-dot--archived"></i> Archived / no recent reading</span></div>
+<p class="note" id="boundary-note" role="status">Shoreline layer not loaded yet.</p>
+<p class="module-caption">Green tags use published research coordinates; amber tags show approximate areas.</p>
+</aside>
+<div class="panel holy-grail__center">
+<div class="panel-heading"><h3>Laguna de Bay</h3><span class="tag tag--teal" id="map-layer-tag">Map + Station Areas</span></div>
+<div aria-label="Interactive Laguna de Bay map" id="map" role="region"></div>
+<p class="map-legal">Map tiles © OpenStreetMap contributors · Internet connection required.</p>
+</div>
+<aside aria-label="Selected station details" class="panel holy-grail__right">
+<h3>Selected Station</h3>
+<div aria-live="polite" id="map-selected-station">
+<p class="hint">Choose a marker to view the station's historical measurements.</p>
+</div>
+<div class="side-divider"></div>
+<div class="detail-tile"><span>Map status</span><strong id="map-status" role="status">Not opened yet</strong></div>
+<div class="detail-tile"><span>Clicked coordinates</span><strong id="map-coordinates">Not selected</strong></div>
+
+</aside>
+</div>
+</section>
+
+<section aria-labelledby="stations-title" class="view" hidden="" id="view-stations">
+<div class="page-intro"><div><h2 id="stations-title">Monitoring Stations</h2><p class="module-caption">Select Active or Archived, then choose a station to see its records.</p></div></div>
+<div class="master-detail">
+<aside class="panel master-detail__list">
+<h3>Station Directory</h3>
+<div aria-label="Filter stations by reporting activity" class="station-status-tabs" role="group">
+<button aria-pressed="true" class="status-tab is-current" data-station-status="active" type="button">Active Stations <span id="active-stations-count">16</span></button>
+<button aria-pressed="false" class="status-tab" data-station-status="archived" type="button">Archived Stations <span id="archived-stations-count">3</span></button>
+</div>
+<p class="status-explainer" id="station-status-explainer">Based on recent imported measurements; not official station operation status.</p>
+<label class="form-label" for="station-search">Search by station ID or lake bay</label>
+<input autocomplete="off" class="search-input" id="station-search" placeholder="e.g., East Bay or IV" type="search">
+<div aria-label="Monitoring station list" class="station-directory" id="station-directory" role="list">
+<p class="hint">Loading LLDA station records...</p>
+</div>
+
+</aside>
+<article class="panel master-detail__details">
+<div class="panel-heading"><h3>Station Profile</h3><span class="tag tag--teal">LLDA historical data</span></div>
+<label class="form-label" for="station-period">View measurements from</label>
+<select class="control-select period-select" id="station-period">
+<option value="2023-10">October 2023</option>
+<option value="2023-11">November 2023</option>
+<option value="2023-12">December 2023</option>
+<option selected="" value="2026-06">June 2026</option>
+</select>
+<div aria-label="Parameter color key" class="parameter-legend" id="station-parameter-key"></div>
+<div aria-live="polite" id="station-profile"><p class="hint">Select a station in the directory.</p></div>
+</article>
+</div>
+</section>
+
+<section aria-labelledby="analytics-title" class="view" hidden="" id="view-analytics">
+<div class="page-intro">
+<div>
+<h2 id="analytics-title">Water Quality Analytics</h2>
+<p class="module-caption">Select a station, parameter and month to compare observations.</p>
+</div>
+<span class="tag tag--teal">LLDA · Historical reports</span>
+</div>
+<div aria-label="Analytics filters" class="panel analytics-toolbar">
+<div class="analytics-filter"><label for="analytics-station">Monitoring station</label>
+<select aria-label="Choose station for historical trend" class="control-select" id="analytics-station"><option>Loading stations...</option></select></div>
+<div class="analytics-filter"><label for="analytics-parameter">Water quality parameter</label>
+<select aria-label="Choose parameter for charts" class="control-select" id="analytics-parameter"><option>Loading parameters...</option></select></div>
+<div class="analytics-filter"><label for="analytics-period">Comparison month</label>
+<select aria-label="Choose month for station comparison" class="control-select" id="analytics-period"><option>Loading months...</option></select></div>
+<div class="analytics-toolbar-actions">
+<button class="button" data-open-selected-station="" type="button">Station Profile</button>
+<button class="button button--primary" data-show-station-map="" type="button">Show on Map</button>
+</div>
+</div>
+<div class="analytics-color-guide"><span aria-live="polite" id="analytics-parameter-badge" role="status"></span></div>
+<p class="analytics-disclaimer">Charts plot exact numeric readings only. Open the tables to view below-limit and unavailable readings.</p>
+<div class="analytics-grid">
+<article aria-labelledby="analytics-trend-title" class="panel analytics-grid__wide">
+<div class="panel-heading analytics-chart-heading"><div><h3 id="analytics-trend-title">Historical Parameter Trend</h3><p class="chart-subtitle" id="analytics-trend-heading">Loading station trend...</p></div><span class="tag">Line Chart</span></div>
+<div class="chart-region chart-region--line">
+<canvas aria-label="Line chart of available historical readings for a selected monitoring station" hidden="" id="analytics-trend-canvas" role="img"></canvas>
+<div hidden="" id="analytics-trend-fallback"></div>
+</div>
+<p class="chart-description" id="analytics-trend-note"></p>
+<details class="chart-data-details"><summary>View exact monthly values (accessible table)</summary>
+<div class="table-scroll"><table><thead><tr><th scope="col">Month</th><th scope="col">Reported reading</th><th scope="col">Chart treatment</th></tr></thead><tbody id="analytics-trend-table"></tbody></table></div>
+</details>
+</article>
+<article aria-labelledby="analytics-compare-title" class="panel">
+<div class="panel-heading analytics-chart-heading"><div><h3 id="analytics-compare-title">Monitoring Stations Compared</h3><p class="chart-subtitle" id="analytics-compare-heading">Loading comparison...</p></div><span class="tag">Bar Chart</span></div>
+<div class="chart-region chart-region--bar">
+<canvas aria-label="Bar chart comparing LLDA monitoring stations for selected month and parameter" hidden="" id="analytics-compare-canvas" role="img"></canvas>
+<div hidden="" id="analytics-compare-fallback"></div>
+</div>
+<p class="chart-description" id="analytics-compare-note"></p>
+<details class="chart-data-details"><summary>View exact station values (accessible table)</summary>
+<div class="table-scroll"><table><thead><tr><th scope="col">Station</th><th scope="col">Reported reading</th><th scope="col">Chart treatment</th></tr></thead><tbody id="analytics-compare-table"></tbody></table></div>
+</details>
+</article>
+<article aria-labelledby="analytics-summary-title" class="panel analytics-summary-panel">
+<div class="panel-heading"><h3 id="analytics-summary-title">Parameter Summary</h3><span class="tag">Details</span></div>
+<div aria-live="polite" id="analytics-summary"><p class="hint">Loading reported readings...</p></div>
+<p class="source-caption">Base source: <a href="https://llda.gov.ph/wp-content/uploads/2026/waterqlty/2Q2026%20WATER%20QUALITY%20REPORT.pdf" rel="noopener noreferrer" target="_blank">LLDA Q2 2026</a> · Local imports have separate provenance in Data Explorer.</p>
+</article>
+</div>
+<div class="analytics-meta" role="status"><span id="analytics-selected-reading">Selected reading will appear here.</span><span id="analytics-render-mode">Preparing charts...</span></div>
+<section aria-labelledby="history-title" class="panel historical-panel">
+<div class="panel-heading"><div><h3 id="history-title">Extended Historical Archive · 1990–June 2026</h3><p class="chart-subtitle">Three distinct observation methods · source-backed annual data and preserved monthly readings</p></div><span class="tag tag--teal">Long-term context</span></div>
+<p class="history-guardrail">The historical chart keeps lake-wide annual, station annual and station monthly series separate. Missing years are not interpolated.</p>
+<div class="history-controls">
+<label for="history-parameter">Historical parameter<select class="control-select" id="history-parameter"><option value="bod">BOD · mg/L</option><option value="tss">Total Suspended Solids · mg/L</option></select></label>
+<label for="history-station">Station for annual/monthly comparison<select class="control-select" id="history-station"><option value="I">Loading station list…</option></select></label>
+</div>
+<div aria-live="polite" class="historical-param-guide" id="history-selected-parameter"></div>
+<div class="history-summary" id="history-summary" role="status">Loading the long-term archive…</div>
+<div aria-label="Historical water quality measurements from 1990 to 2026, split by measurement method" class="history-chart" id="history-chart" role="img"></div>
+<div class="history-legend"><span><i class="history-key history-key--lake"></i> Lake-wide annual averages · 1990–2000</span><span><i class="history-key history-key--station"></i> Station annual averages · 2009–2012</span><span><i class="history-key history-key--recent"></i> Station monthly readings · 2023 / June 2026</span></div>
+<details class="chart-data-details"><summary>View all plotted source readings and missing-year explanations</summary><div class="table-scroll"><table><thead><tr><th scope="col">Series</th><th scope="col">Year / month</th><th scope="col">Reported value</th><th scope="col">Source</th></tr></thead><tbody id="history-table-body"></tbody></table></div></details>
+<details class="source-details"><summary>Historical data sources</summary><p class="source-caption">Source: <a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC historical lake-wide averages, Table 3</a> · <a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 annual station report</a> · <a href="https://llda.gov.ph/ldb-and-its-tributaries/" rel="noopener noreferrer" target="_blank">LLDA 2023/2026 quarterly reports</a>.</p></details>
+</section>
+</section>
+
+<section aria-labelledby="explorer-title" class="view" hidden="" id="view-explorer">
+<div class="page-intro">
+<div>
+
+<h2 id="explorer-title">Data Explorer</h2>
+<p class="module-caption">Filter, sort and export the reported observations.</p>
+</div>
+<div class="explorer-header-actions"><button class="button" data-open-view="manage" type="button">Manage Data</button><button class="button button--primary" disabled="" id="explorer-export" type="button">↓ Export Filtered CSV</button></div>
+</div>
+<div class="explorer-grid">
+<aside aria-labelledby="explorer-filter-title" class="panel explorer-grid__filters">
+<div class="panel-heading"><h3 id="explorer-filter-title">Refine data</h3><span class="tag">Filters</span></div>
+<label for="station-filter">Monitoring station</label>
+<select class="control-select" id="station-filter"><option value="">All stations</option></select>
+<label for="parameter-filter">Parameter</label>
+<select class="control-select" id="parameter-filter"><option value="">All parameters</option></select>
+<div aria-live="polite" class="current-parameter" id="explorer-active-parameter"></div>
+<label for="date-filter">Reporting month</label>
+<select class="control-select" id="date-filter"><option value="">All months</option></select>
+<label for="reading-filter">Reading classification</label>
+<select class="control-select" id="reading-filter">
+<option value="">All reported readings</option>
+<option value="exact">Exact numeric readings</option>
+<option value="below-limit">Below reporting limit</option>
+<option value="missing">Not reported</option>
+</select>
+<button class="button button--full explorer-reset" id="explorer-reset" type="button">Clear All Filters</button>
+<div class="side-divider"></div>
+
+
+<p class="explorer-disclaimer">“&lt;0.1” means below the reporting limit, not zero.</p>
+<a class="explorer-source-link" href="https://llda.gov.ph/wp-content/uploads/2026/waterqlty/2Q2026%20WATER%20QUALITY%20REPORT.pdf" rel="noopener noreferrer" target="_blank">View LLDA June 2026 source report ↗</a>
+</aside>
+<article aria-labelledby="explorer-results-title" class="panel explorer-grid__results">
+<div class="panel-heading explorer-results-heading"><h3 id="explorer-results-title">Observation Records</h3><span class="tag tag--teal" id="explorer-match-count">Loading…</span></div>
+<div aria-label="Filtered data summary" class="explorer-stats">
+<div><span>Matching records</span><strong id="explorer-count-total">—</strong></div>
+<div><span>Exact readings</span><strong id="explorer-count-exact">—</strong></div>
+<div><span>Below limit</span><strong id="explorer-count-below">—</strong></div>
+</div>
+<div class="explorer-toolbar">
+<label class="explorer-search-label" for="explorer-search">Search records
+              <input autocomplete="off" class="search-input" id="explorer-search" placeholder="Station, bay, month, parameter, reading…" type="search">
+</label>
+<label class="explorer-page-label" for="explorer-page-size">Rows per page
+              <select class="control-select" id="explorer-page-size"><option value="10">10</option><option value="25">25</option><option value="all">All</option></select>
+</label>
+</div>
+<p class="explorer-table-help">Select a heading to sort, View to open a station, or Export to download all filtered records.</p>
+<div aria-label="Scrollable observations data table" class="table-scroll explorer-table-scroll" role="region" tabindex="0">
+<table id="explorer-table">
+<thead><tr>
+<th data-col="station" scope="col"><button data-explorer-sort="station" type="button">Station <span aria-hidden="true">↕</span></button></th>
+<th data-col="zone" scope="col"><button data-explorer-sort="zone" type="button">Bay / Area <span aria-hidden="true">↕</span></button></th>
+<th data-col="period" scope="col"><button data-explorer-sort="period" type="button">Month <span aria-hidden="true">↕</span></button></th>
+<th data-col="parameter" scope="col"><button data-explorer-sort="parameter" type="button">Parameter <span aria-hidden="true">↕</span></button></th>
+<th data-col="value" scope="col"><button data-explorer-sort="value" type="button">Reading <span aria-hidden="true">↕</span></button></th>
+<th scope="col">Unit</th>
+<th data-col="kind" scope="col"><button data-explorer-sort="kind" type="button">Type <span aria-hidden="true">↕</span></button></th>
+<th scope="col">Profile</th>
+</tr></thead>
+<tbody id="explorer-table-body"><tr><td class="table-empty" colspan="8">Loading historical monitoring data…</td></tr></tbody>
+</table>
+</div>
+<div class="explorer-pagination">
+<p aria-live="polite" id="explorer-page-info" role="status">Loading records…</p>
+<div class="explorer-pagination-buttons">
+<button class="button" disabled="" id="explorer-prev" type="button">← Previous</button>
+<button class="button" disabled="" id="explorer-next" type="button">Next →</button>
+</div>
+</div>
+<p aria-live="polite" class="explorer-export-status" id="explorer-export-status" role="status">Data sources: LLDA historical reports and any locally imported observations · not a live feed.</p>
+</article>
+</div>
+</section>
+
+
+<section aria-labelledby="manage-title" class="view" hidden id="view-manage">
+  <div class="page-intro">
+    <div><h2 id="manage-title">Manage Data</h2><p class="module-caption">Import, review and save source-documented water-quality observations.</p></div>
+    <span class="tag tag--teal" id="manager-local-count">Administrator sign-in required</span>
+  </div>
+  <section class="panel manager-login-panel" id="manager-login-panel" aria-label="Administrator login">
+    <h3>Administrator sign-in</h3>
+    <p class="module-caption">Only authorized administrators can publish or correct water-quality observations. Visitors can view data without signing in.</p>
+    <form id="manager-login-form" class="manager-login-form">
+      <label>Administrator email<input class="search-input" id="manager-login-email" type="email" required autocomplete="username" placeholder="admin@example.com"></label>
+      <label>Password<input class="search-input" id="manager-login-password" type="password" required autocomplete="current-password" minlength="12"></label>
+      <button class="button button--primary" type="submit">Sign in securely</button>
+    </form>
+    <p class="manager-message" id="manager-auth-message" role="status" aria-live="polite"></p>
+  </section>
+  <div class="manager-session" id="manager-session" hidden><span id="manager-session-label"></span><button class="button" type="button" id="manager-logout">Sign out</button></div>
+  <div class="manager-layout" hidden>
+    <aside class="panel manager-side">
+      <h3>Update method</h3>
+      <div class="manager-methods" role="group" aria-label="Data update method">
+        <label><input type="radio" name="manager-method" value="manual" checked> Manual entry</label>
+        <label><input type="radio" name="manager-method" value="file"> CSV / Excel upload</label>
+        <label><input type="radio" name="manager-method" value="url"> Online source</label>
+      </div>
+      <div class="side-divider"></div>
+      <label class="form-label" for="manager-editor">Entered / reviewed by</label>
+      <input class="search-input" id="manager-editor" maxlength="100" placeholder="Name of person reviewing the data" required>
+      <label class="form-label" for="manager-source-title">Source / report title</label>
+      <input class="search-input" id="manager-source-title" maxlength="160" placeholder="e.g. LLDA Q3 2026 report">
+      <label class="form-label" for="manager-source">Original source URL</label>
+      <input class="search-input" id="manager-source" placeholder="https://... (required when not in the import file)" type="url">
+      <p class="module-caption">Use a source you can verify. A source link does not automatically make the data official.</p>
+      <div class="side-divider"></div>
+      <h3>Shared database</h3>
+      <p class="module-caption" id="manager-storage-info">Approved updates appear for every visitor.</p>
+      <button class="button button--full" id="manager-backup" type="button">Download shared JSON backup</button>
+      <button class="button button--full manager-danger" id="manager-reset" type="button">Refresh shared data</button>
+    </aside>
+    <div class="manager-workspace">
+      <article class="panel manager-form-panel">
+        <div class="panel-heading"><h3>New observations</h3><span class="tag">Review before saving</span></div>
+        <div id="manager-manual" class="manager-method-panel">
+          <div class="manager-fields">
+            <label>Monitoring station<select class="control-select" id="manager-station"></select></label>
+            <label>Sample month<input class="search-input" type="month" id="manager-period"></label>
+            <label>Parameter<select class="control-select" id="manager-parameter"></select></label>
+            <label>Reported value<input class="search-input" id="manager-value" placeholder="e.g. 7.2 or &lt;0.1"></label>
+          </div>
+          <p class="module-caption">Enter the value exactly as reported; &lt;0.1 is not zero.</p>
+          <button class="button button--primary" id="manager-manual-preview" type="button">Preview manual record</button>
+        </div>
+        <div id="manager-file" class="manager-method-panel" hidden>
+          <label class="form-label" for="manager-upload">Upload CSV, XLSX, XLS or JSON</label>
+          <input id="manager-upload" class="manager-file-input" type="file" accept=".csv,.xlsx,.xls,.json">
+          <p class="module-caption">Headers: Station ID, Month, Parameter, Reported value, Unit, Official source URL. Excel support needs the spreadsheet library to load online.</p>
+          <div class="manager-inline-actions"><button class="button" id="manager-template" type="button">Download CSV template</button><button class="button button--primary" id="manager-file-preview" type="button">Preview uploaded file</button></div>
+        </div>
+        <div id="manager-url-panel" class="manager-method-panel" hidden>
+          <label class="form-label" for="manager-url">Direct CSV or JSON data URL</label>
+          <input class="search-input" id="manager-url" type="url" placeholder="https://example.org/readings.csv">
+          <p class="module-caption">Only direct public CSV/JSON URLs that permit browser access (CORS) are supported. LLDA PDF pages cannot be imported directly; download and transcribe/convert the table first.</p>
+          <button class="button button--primary" id="manager-url-preview" type="button">Fetch and preview URL</button>
+        </div>
+        <p class="manager-message" id="manager-message" role="status" aria-live="polite">Choose a method to prepare records.</p>
+      </article>
+      <article class="panel manager-preview-panel">
+        <div class="panel-heading"><h3>Validation preview</h3><span class="tag" id="manager-preview-count">No records prepared</span></div>
+        <div class="manager-preview-summary" id="manager-preview-summary">All changes are reviewed before they become visible.</div>
+        <div class="table-scroll manager-table"><table>
+          <thead><tr><th>Row</th><th>Station</th><th>Month</th><th>Parameter</th><th>Reading</th><th>Result</th></tr></thead>
+          <tbody id="manager-preview-body"><tr><td colspan="6" class="table-empty">Prepare records to see validation results.</td></tr></tbody>
+        </table></div>
+        <label class="manager-confirm"><input type="checkbox" id="manager-allow-replace"> Allow administrator-approved corrections to replace previously published readings (the source report files remain unchanged).</label>
+        <button class="button button--primary manager-save" id="manager-save" type="button" disabled>Save validated readings</button>
+        <p class="module-caption">Saved changes update the Map, Monitoring Stations, Analytics and Data Explorer after the page reloads. Approved updates are available to all visitors through the shared backend database.</p>
+      </article>
+      <article class="panel manager-history-panel">
+        <div class="panel-heading"><h3>Shared change history</h3><span class="tag">Audit log</span></div>
+        <div id="manager-audit" aria-live="polite" class="manager-audit-list">No shared changes yet.</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="about-title" class="view" hidden="" id="view-about">
+<div class="page-intro"><div><h2 id="about-title">About the Project &amp; Data Sources</h2><p class="module-caption">Review project information, data sources and methodology.</p></div></div>
+<div class="about-parameter-legend panel"><h3>Parameter color legend</h3><div class="parameter-legend" id="about-parameter-key"></div><p class="hint">Colors identify parameters, not water-quality ratings.</p></div>
+<article class="panel prose-panel">
+<h3>Project Purpose</h3>
+<p>LakeWatch Laguna is an academic web application for presenting Laguna de Bay water-quality monitoring information using interactive maps, JSON datasets and charts.</p>
+<h3>Academic Context</h3>
+<p><strong>Course:</strong> WITM 101 — Advanced Web Design and Programming<br/><strong>Program:</strong> Master in Information Technology<br/><strong>Campus:</strong> Laguna State Polytechnic University – San Pablo City Campus.</p>
+<p><strong>Developers:</strong> Ian Titus F. Ramones and Dycyn T. Alvaro.</p>
+<h3>Updating the Data</h3>
+<p>The Manage Data module supports manually reviewed readings, CSV/Excel uploads and direct CORS-enabled CSV/JSON URLs. Changes are locally stored in your browser, not published to a shared server. Download a JSON backup to move updates between computers. Source review remains the user's responsibility.</p>
+<h3>Measurement Parameters</h3>
+<p>The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
+<details class="method-details"><summary>Data accuracy, historical coverage and station chronology</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
+
+
+
+<h3>References</h3>
+<ul>
+<li><a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC, Laguna de Bay: Experiences and Lessons Learned, Table 3 (1990–2000 annual means)</a></li>
+<li><a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 Annual Water Quality Report (station additions and annual averages)</a></li>
+<li><a href="https://llda.gov.ph/wp-content/uploads/dox/ar/ar17.pdf" rel="noopener noreferrer" target="_blank">LLDA 2017 Annual Report (inconsistent VII/VIII South Bay label)</a></li>
+<li><a href="https://openstat.psa.gov.ph/PXWeb/pxweb/en/DB/DB__3A/0153A5DCLL0.px/" rel="noopener noreferrer" target="_blank">PSA / LLDA technical notes on 2021 station additions</a></li>
+<li><a href="https://llda.gov.ph/" rel="noopener noreferrer" target="_blank">Laguna Lake Development Authority (LLDA)</a></li>
+<li><a href="https://www.llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/2023/q4_2023.pdf" rel="noopener noreferrer" target="_blank">LLDA Quarterly Water Quality Report, October–December 2023 (PDF)</a></li>
+<li><a href="https://llda.gov.ph/wp-content/uploads/2026/waterqlty/2Q2026%20WATER%20QUALITY%20REPORT.pdf" rel="noopener noreferrer" target="_blank">LLDA Quarterly Water Quality Report, April–June 2026 (PDF)</a></li>
+<li><a href="https://llda.gov.ph/ldb-and-its-tributaries/" rel="noopener noreferrer" target="_blank">Official LLDA water-quality reports: newer published data</a></li>
+<li><a href="https://www.openstreetmap.org/relation/79348" rel="noopener noreferrer" target="_blank">Laguna de Bay — OpenStreetMap relation 79348</a></li>
+<li><a href="https://nominatim.org/release-docs/latest/api/Lookup/" rel="noopener noreferrer" target="_blank">Nominatim polygon lookup documentation</a></li>
+<li><a href="https://leafletjs.com/" rel="noopener noreferrer" target="_blank">Leaflet documentation</a></li>
+<li><a href="https://www.chartjs.org/" rel="noopener noreferrer" target="_blank">Chart.js documentation</a></li>
+<li><a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap attribution and license</a></li>
+</ul>
+
+
+</article>
+</section>
+</main>
+<footer class="site-footer">
+<span>LakeWatch Laguna · MIT · WITM 101</span>
+<span>Developed by Ian Titus F. Ramones &amp; Dycyn T. Alvaro</span>
+<span>LSPU – San Pablo City Campus · 2026</span>
+</footer>
+</body>
+</html>
