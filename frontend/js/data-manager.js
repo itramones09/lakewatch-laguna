@@ -8,12 +8,26 @@ window.LakeWatchData = (() => {
   const norm = s => String(s??'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   const keyOf = r => `${r.stationId}|${r.period}|${r.parameter}`;
   const validURL = u => {try {const x = new URL(u);return ['https:','http:'].includes(x.protocol) && !!x.hostname;}catch{return false;}};
+  function validSourceDate(input){
+    const value=String(input??'').trim();
+    if(!/^\d{4}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?)?$/.test(value))return false;
+    const year=Number(value.slice(0,4));
+    if(year<1800 || year>new Date().getFullYear())return false;
+    if(value.length===10){
+      const [y,m,d]=value.split('-').map(Number);
+      const dt=new Date(Date.UTC(y,m-1,d));
+      return dt.getUTCFullYear()===y && dt.getUTCMonth()===m-1 && dt.getUTCDate()===d;
+    }
+    return true;
+  }
   const validValue = value => /^(?:<\s*)?(?:\d+(?:\.\d+)?|\.\d+)$/.test(String(value).trim()) && Number(String(value).replace('<','').trim())<=100000;
   const validPeriod = value => /^\d{4}-(0[1-9]|1[0-2])$/.test(value) && value>='1970-01' && value <= new Date().toISOString().slice(0,7);
   const aliases = {
     stationId:['stationid','station','stationnumber','stationno'],period:['month','period','samplemonth','samplingmonth','date','samplingdate'],
     parameter:['parameter','parameterid','parametername','waterqualityparameter'],value:['reportedvalue','value','reading','measurement','reportedreading'],
-    sourceUrl:['officialsourceurl','sourceurl','source','url','referenceurl'],unit:['unit','units'],title:['sourcetitle','reporttitle']
+    sourceUrl:['officialsourceurl','sourceurl','source','url','referenceurl'],unit:['unit','units'],title:['sourcetitle','reporttitle','documenttitle'],
+    sourceKind:['sourcetype','sourcekind','evidencetype'],sourceOrganization:['sourceorganization','issuingorganization','publisher','organization'],
+    sourceDate:['sourcedate','publicationdate','publicationyear','reportdate'],sourceReference:['sourcereference','referencepages','documentreference','reportnumber','page']
   };
   function csvParse(text){
     const rows=[];let row=[],field='',quoted=false;
@@ -54,6 +68,16 @@ window.LakeWatchData = (() => {
       }return m;
     };
     const method=()=>document.querySelector('input[name="manager-method"]:checked')?.value||'manual';
+    const sourceKind=()=>document.querySelector('input[name="manager-source-kind"]:checked')?.value||'online';
+    function showSourceKind(){
+      const offline=sourceKind()==='offline';
+      $('manager-online-fields').hidden=offline;
+      $('manager-offline-fields').hidden=!offline;
+      $('manager-title-hint').textContent=offline?'(required)':'(recommended)';
+    }
+    function invalidatePreview(){
+      if(prepared.length){prepared=[];renderPreview();say('Source details changed. Preview the readings again before saving.');}
+    }
     const say=(message, level='info')=>{ $('manager-message').textContent=message;$('manager-message').dataset.level=level;};
     const authMessage=(message)=>{ $('manager-auth-message').textContent=message; };
     function paramId(value){const v=norm(value), map={dissolvedoxygen:'do',biochemicaloxygendemand:'bod',phlevel:'ph',nitraten:'nitrate',inorganicphosphate:'phosphate',totalsuspendedsolids:'tss'};
@@ -64,10 +88,16 @@ window.LakeWatchData = (() => {
         const original=Object.keys(raw).find(k=>names.includes(norm(k)));
         obj[key]=raw[original??key]??raw[key]??'';
       }
+      const chosenKind=String(obj.sourceKind || sourceKind()).trim().toLowerCase();
+      const fileDeclaredUrl=String(obj.sourceUrl??'').trim();
       const r={
         stationId:stationId(obj.stationId),period:String(obj.period??'').slice(0,7),parameter:paramId(obj.parameter),
         value:String(obj.value??'').trim().replace(/^<\s+/,'<'),
-        sourceUrl:String(obj.sourceUrl || $('manager-source').value || (sourceMethod==='url'?$('manager-url').value:'')).trim(),
+        sourceKind:chosenKind,
+        sourceUrl:chosenKind==='offline'?'':String(obj.sourceUrl || $('manager-source').value || (sourceMethod==='url'?$('manager-url').value:'')).trim(),
+        sourceOrganization:String(obj.sourceOrganization || $('manager-source-organization').value || '').trim(),
+        sourceDate:String(obj.sourceDate || $('manager-source-date').value || '').trim(),
+        sourceReference:String(obj.sourceReference || $('manager-source-reference').value || '').trim(),
         title:String(obj.title || $('manager-source-title').value || '').trim(),method:sourceMethod
       };
       const unit=String(obj.unit??'').trim();let error='';
@@ -76,8 +106,13 @@ window.LakeWatchData = (() => {
       else if(!r.parameter)error='Unknown parameter';
       else if(!validValue(r.value))error='Invalid reading';
       else if(r.parameter==='ph' && Number(r.value.replace('<',''))>14)error='pH must be ≤14';
-      else if(!validURL(r.sourceUrl))error='Source URL required';
-      else if(r.title.length>160)error='Source title too long';
+      else if(!['online','offline'].includes(r.sourceKind))error='Choose Online or Offline source';
+      else if(r.sourceKind==='online' && !validURL(r.sourceUrl))error='Online source needs an HTTP(S) URL';
+      else if(r.sourceKind==='offline' && fileDeclaredUrl)error='Offline source row has a URL; select Online Source or clear the URL';
+      else if(r.sourceKind==='offline' && !r.title)error='Offline source needs a report/document title';
+      else if(r.sourceKind==='offline' && !r.sourceOrganization)error='Offline source needs the issuing organization';
+      else if(r.sourceKind==='offline' && !validSourceDate(r.sourceDate))error='Offline publication date: YYYY, YYYY-MM or YYYY-MM-DD';
+      else if(r.title.length>160 || r.sourceOrganization.length>160 || r.sourceReference.length>250)error='Source citation is too long';
       else if(unit && norm(unit)!==norm(params.find(p=>p.id===r.parameter).unit) && !(r.parameter==='ph'&&['none','ph','unitless'].includes(norm(unit))))error='Unit mismatch';
       return {...r,error};
     }
@@ -86,7 +121,7 @@ window.LakeWatchData = (() => {
       for(const r of prepared){if(r.error)invalid++;else if(r.status==='ready')ready++;else if(r.status==='conflict')conflict++;else duplicate++;}
       $('manager-preview-count').textContent=`${prepared.length} rows`;
       $('manager-preview-summary').textContent=`${ready} new · ${conflict} corrections · ${duplicate} unchanged · ${invalid} invalid. All updates are revalidated on the server.`;
-      $('manager-preview-body').innerHTML=prepared.length ? prepared.slice(0,30).map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.stationId||'—')}</td><td>${esc(r.period||'—')}</td><td>${esc(r.parameter||'—')}</td><td>${esc(r.value||'—')}</td><td><span class="manager-tag manager-tag--${r.error?'error':r.status}">${esc(r.error||{ready:'New',conflict:'Correction',duplicate:'Unchanged'}[r.status])}</span></td></tr>`).join('') : '<tr><td colspan="6" class="table-empty">Choose an import method and preview.</td></tr>';
+      $('manager-preview-body').innerHTML=prepared.length ? prepared.slice(0,30).map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.stationId||'—')}</td><td>${esc(r.period||'—')}</td><td>${esc(r.parameter||'—')}</td><td>${esc(r.value||'—')}</td><td>${esc(r.sourceKind||'—')}</td><td><span class="manager-tag manager-tag--${r.error?'error':r.status}">${esc(r.error||{ready:'New',conflict:'Correction',duplicate:'Unchanged'}[r.status])}</span></td></tr>`).join('') : '<tr><td colspan="7" class="table-empty">Choose an import method and preview.</td></tr>';
       $('manager-save').disabled=(!loggedIn || !(ready+conflict) || invalid>0);
     }
     function preview(rows,sourceMethod){
@@ -143,7 +178,7 @@ window.LakeWatchData = (() => {
     async function renderAudit(){
       try{
         const result=await api.audit();
-        $('manager-audit').innerHTML=result.rows.length?result.rows.slice(0,30).map(r=>`<div class="manager-audit-line"><strong>${esc(r.stationId)} · ${esc(r.period)} · ${esc(r.parameter)}</strong> — ${esc(r.value)} <small>${esc(r.editor)} · ${esc(r.method)} · ${esc(r.at)}${r.previousValue!==null?' · previous '+esc(r.previousValue):''}</small></div>`).join(''):'No shared updates yet.';
+        $('manager-audit').innerHTML=result.rows.length?result.rows.slice(0,30).map(r=>`<div class="manager-audit-line"><strong>${esc(r.stationId)} · ${esc(r.period)} · ${esc(r.parameter)}</strong> — ${esc(r.value)} <small>${esc(r.editor)} · ${esc(r.method)} · ${esc(r.sourceKind||'online')} source · ${esc(r.title||r.sourceUrl||'')} · ${esc(r.sourceOrganization||'')} ${esc(r.sourceDate||'')} · ${esc(r.at)}${r.previousValue!==null?' · previous '+esc(r.previousValue):''}</small></div>`).join(''):'No shared updates yet.';
       }catch(e){$('manager-audit').textContent=e.message;}
     }
     async function save(){
@@ -154,7 +189,7 @@ window.LakeWatchData = (() => {
       if(!confirm(`Publish ${readings.length} reading(s) to the shared database? All visitors will see these updates.`))return;
       $('manager-save').disabled=true;say('Publishing validated readings to the shared database…');
       try{
-        const result=await api.saveBatch(readings.map(({stationId,period,parameter,value,sourceUrl,title,method})=>({stationId,period,parameter,value,sourceUrl,title,method})),$('manager-allow-replace').checked);
+        const result=await api.saveBatch(readings.map(({stationId,period,parameter,value,sourceUrl,title,method,sourceKind,sourceOrganization,sourceDate,sourceReference})=>({stationId,period,parameter,value,sourceUrl,title,method,sourceKind,sourceOrganization,sourceDate,sourceReference})),$('manager-allow-replace').checked);
         say(`Saved ${result.saved} reading(s), ${result.unchanged} unchanged. Refreshing…`,'success');
         window.location.reload();
       }catch(e){say(e.message,'error');renderPreview();}
@@ -180,6 +215,13 @@ window.LakeWatchData = (() => {
         try{const result=await api.me();setAuthorized(true,result.email);}
         catch(e){api.saveToken('');setAuthorized(false);authMessage('Please sign in. Previous session expired.');}
       }
+      showSourceKind();
+      document.querySelectorAll('input[name="manager-source-kind"]').forEach(radio=>radio.addEventListener('change',()=>{
+        showSourceKind();invalidatePreview();
+      }));
+      ['manager-source','manager-source-title','manager-source-organization','manager-source-date','manager-source-reference'].forEach(id=>{
+        $(id).addEventListener('input',invalidatePreview);
+      });
       document.querySelectorAll('input[name="manager-method"]').forEach(radio=>radio.addEventListener('change',()=>{
         const m=method();$('manager-manual').hidden=m!=='manual';$('manager-file').hidden=m!=='file';$('manager-url-panel').hidden=m!=='url';
         prepared=[];renderPreview();say('Prepare readings for validation.');
@@ -189,7 +231,10 @@ window.LakeWatchData = (() => {
       });
       $('manager-file-preview').addEventListener('click',async()=>{try{say('Reading file…');preview(await readFile(),'file');}catch(e){say(e.message,'error');}});
       $('manager-url-preview').addEventListener('click',async()=>{try{say('Fetching source…');preview(await readURL(),'url');}catch(e){say(e.message,'error');}});
-      $('manager-template').addEventListener('click',()=>download('LakeWatch_Import_Template.csv','"Station ID","Month","Parameter","Reported value","Unit","Official source URL"\r\n"I","2026-07","do","7.4","mg/L","https://example.org/report"','text/csv'));
+      $('manager-template-online').addEventListener('click',()=>download('LakeWatch_Online_Source_Template.csv',
+        '"Station ID","Month","Parameter","Reported value","Unit","Source Type","Source Title","Official source URL"\r\n"","","","","","online","",""', 'text/csv'));
+      $('manager-template-offline').addEventListener('click',()=>download('LakeWatch_Offline_Source_Template.csv',
+        '"Station ID","Month","Parameter","Reported value","Unit","Source Type","Source Title","Source Organization","Publication Date","Source Reference"\r\n"","","","","","offline","","","",""', 'text/csv'));
       $('manager-save').addEventListener('click',save);
       $('manager-backup').addEventListener('click',backup);
       $('manager-reset').addEventListener('click',()=>window.location.reload());

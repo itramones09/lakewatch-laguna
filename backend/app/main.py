@@ -19,8 +19,8 @@ import jwt
 from argon2 import PasswordHasher, exceptions as argon_exc
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine, select, func
+from pydantic import BaseModel, Field, field_validator, model_validator
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine, select, func, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from dotenv import load_dotenv
 
@@ -78,7 +78,11 @@ class Observation(BaseModelSQL):
     period: Mapped[str] = mapped_column(String(7), index=True)
     parameter: Mapped[str] = mapped_column(String(32))
     value: Mapped[str] = mapped_column(String(32))
-    source_url: Mapped[str] = mapped_column(Text)
+    source_url: Mapped[str] = mapped_column(Text, default='')
+    source_kind: Mapped[str] = mapped_column(String(16), nullable=False, server_default='online')
+    source_organization: Mapped[str] = mapped_column(String(160), nullable=False, server_default='')
+    source_date: Mapped[str] = mapped_column(String(10), nullable=False, server_default='')
+    source_reference: Mapped[str] = mapped_column(String(250), nullable=False, server_default='')
     title: Mapped[str] = mapped_column(String(160), default='')
     method: Mapped[str] = mapped_column(String(20))
     updated_by: Mapped[str] = mapped_column(String(255))
@@ -93,15 +97,43 @@ class Audit(BaseModelSQL):
     parameter: Mapped[str] = mapped_column(String(32))
     old_value: Mapped[str | None] = mapped_column(String(32), nullable=True)
     new_value: Mapped[str] = mapped_column(String(32))
-    source_url: Mapped[str] = mapped_column(Text)
+    source_url: Mapped[str] = mapped_column(Text, default='')
+    source_kind: Mapped[str] = mapped_column(String(16), nullable=False, server_default='online')
+    source_organization: Mapped[str] = mapped_column(String(160), nullable=False, server_default='')
+    source_date: Mapped[str] = mapped_column(String(10), nullable=False, server_default='')
+    source_reference: Mapped[str] = mapped_column(String(250), nullable=False, server_default='')
+    title: Mapped[str] = mapped_column(String(160), nullable=False, server_default='')
     method: Mapped[str] = mapped_column(String(20))
     editor_id: Mapped[int] = mapped_column(ForeignKey('admins.id'))
     editor_email: Mapped[str] = mapped_column(String(255))
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+def migrate_source_columns():
+    """Add non-destructive provenance columns to existing Render PostgreSQL tables.
+
+    Original records are preserved, and existing citations default to online.
+    The migration is idempotent so backend redeploys are safe.
+    """
+    columns = {
+        'source_kind': "VARCHAR(16) NOT NULL DEFAULT 'online'",
+        'source_organization': "VARCHAR(160) NOT NULL DEFAULT ''",
+        'source_date': "VARCHAR(10) NOT NULL DEFAULT ''",
+        'source_reference': "VARCHAR(250) NOT NULL DEFAULT ''",
+    }
+    with engine.begin() as conn:
+        for table in ('observation_overrides', 'observation_audit'):
+            existing = {column['name'] for column in inspect(conn).get_columns(table)}
+            for name, definition in columns.items():
+                if name not in existing:
+                    conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {definition}'))
+            if table == 'observation_audit' and 'title' not in existing:
+                conn.execute(text("ALTER TABLE observation_audit ADD COLUMN title VARCHAR(160) NOT NULL DEFAULT ''"))
+
+
 def init_db():
     BaseModelSQL.metadata.create_all(engine)
+    migrate_source_columns()
     email = os.getenv('ADMIN_EMAIL', '').strip().lower()
     password = os.getenv('ADMIN_PASSWORD', '')
     with SessionLocal.begin() as db:
@@ -225,10 +257,13 @@ def merged_dataset(db: Session):
             sample = {'period': row.period, 'values': {}}
             station['samples'].append(sample)
         sample['values'][row.parameter] = row.value
-        sample.setdefault('sources', {})[row.parameter] = row.source_url
+        sample.setdefault('sources', {})[row.parameter] = row.source_url if row.source_kind == 'online' else ''
         sample.setdefault('provenance', {})[row.parameter] = {
             'editor': row.updated_by, 'updatedAt': row.updated_at.isoformat(),
-            'method': row.method, 'title': row.title
+            'method': row.method, 'title': row.title,
+            'sourceKind': row.source_kind, 'sourceOrganization': row.source_organization,
+            'sourceDate': row.source_date, 'sourceReference': row.source_reference,
+            'sourceUrl': row.source_url if row.source_kind == 'online' else ''
         }
     periods = sorted({s['period'] for station in data['stations'] for s in station['samples']})
     data['periods'] = periods
@@ -270,7 +305,11 @@ class IncomingObservation(BaseModel):
     period: str
     parameter: str
     value: str
-    sourceUrl: str
+    sourceUrl: str = Field('', max_length=2000)
+    sourceKind: str = Field('online', max_length=16)
+    sourceOrganization: str = Field('', max_length=160)
+    sourceDate: str = Field('', max_length=10)
+    sourceReference: str = Field('', max_length=250)
     title: str = Field('', max_length=160)
     method: str = Field('manual')
     @field_validator('stationId')
@@ -298,13 +337,36 @@ class IncomingObservation(BaseModel):
         number = float(value.replace('<', '').strip())
         if number > 100000: raise ValueError('Outside permitted range')
         return value.replace('< ', '<')
-    @field_validator('sourceUrl')
-    @classmethod
-    def valid_source(cls, value):
-        u = urlparse(value)
-        if u.scheme not in ('http', 'https') or not u.hostname or len(value) > 2000:
-            raise ValueError('Provide a valid source URL')
-        return value
+    @model_validator(mode='after')
+    def validate_provenance(self):
+        self.sourceKind = self.sourceKind.strip().lower()
+        self.title = self.title.strip()
+        self.sourceUrl = self.sourceUrl.strip()
+        self.sourceOrganization = self.sourceOrganization.strip()
+        self.sourceDate = self.sourceDate.strip()
+        self.sourceReference = self.sourceReference.strip()
+        if self.sourceKind not in ('online', 'offline'):
+            raise ValueError('Source type must be Online or Offline')
+        if self.sourceKind == 'online':
+            u = urlparse(self.sourceUrl)
+            if u.scheme not in ('http', 'https') or not u.hostname:
+                raise ValueError('Online source needs a valid HTTP(S) source URL')
+        else:
+            if self.sourceUrl:
+                raise ValueError('Offline source must not include a source URL')
+            if not self.title:
+                raise ValueError('Offline source requires a report/document title')
+            if not self.sourceOrganization:
+                raise ValueError('Offline source requires the issuing organization')
+            if not self.sourceDate or not re.fullmatch(r'\d{4}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?)?', self.sourceDate):
+                raise ValueError('Offline source requires publication date as YYYY, YYYY-MM or YYYY-MM-DD')
+            try:
+                datetime.strptime(self.sourceDate + ('-01-01' if len(self.sourceDate) == 4 else '-01' if len(self.sourceDate) == 7 else ''), '%Y-%m-%d')
+            except ValueError:
+                raise ValueError('Invalid offline publication date')
+            if self.sourceDate[:4] < '1800' or self.sourceDate[:4] > datetime.now(timezone.utc).strftime('%Y'):
+                raise ValueError('Offline publication year outside supported range')
+        return self
     @field_validator('method')
     @classmethod
     def valid_method(cls, value):
@@ -351,10 +413,14 @@ def save_batch(batch: BatchIn, admin: Admin = Depends(current_admin), db: Sessio
                                    parameter=record.parameter)
             db.add(previous)
         previous.value, previous.source_url, previous.title = record.value, record.sourceUrl, record.title
+        previous.source_kind, previous.source_organization = record.sourceKind, record.sourceOrganization
+        previous.source_date, previous.source_reference = record.sourceDate, record.sourceReference
         previous.updated_by, previous.updated_at, previous.method = admin.email, now, record.method
         db.add(Audit(station_id=record.stationId, period=record.period, parameter=record.parameter,
                      old_value=old, new_value=record.value, source_url=record.sourceUrl,
-                     editor_id=admin.id, editor_email=admin.email, method=record.method, changed_at=now))
+                     source_kind=record.sourceKind, source_organization=record.sourceOrganization,
+                     source_date=record.sourceDate, source_reference=record.sourceReference,
+                     title=record.title, editor_id=admin.id, editor_email=admin.email, method=record.method, changed_at=now))
     db.commit()
     return {'saved': len(pending), 'unchanged': len(duplicates), 'shared': True}
 
@@ -365,7 +431,10 @@ def audit(admin: Admin = Depends(current_admin), db: Session = Depends(db_sessio
     return {'rows': [{'stationId': r.station_id, 'period': r.period, 'parameter': r.parameter,
                       'value': r.new_value, 'previousValue': r.old_value,
                       'editor': r.editor_email, 'method': r.method,
-                      'at': r.changed_at.isoformat(), 'sourceUrl': r.source_url} for r in rows]}
+                      'at': r.changed_at.isoformat(), 'sourceUrl': r.source_url,
+                      'sourceKind': r.source_kind, 'title': r.title,
+                      'sourceOrganization': r.source_organization, 'sourceDate': r.source_date,
+                      'sourceReference': r.source_reference} for r in rows]}
 
 
 @app.get('/api/observations/export')
@@ -373,6 +442,8 @@ def export_overrides(admin: Admin = Depends(current_admin), db: Session = Depend
     rows = db.scalars(select(Observation).order_by(Observation.period, Observation.station_id, Observation.parameter)).all()
     return {'format': 'lakewatch-shared-override-backup-v1', 'exportedAt': datetime.now(timezone.utc).isoformat(),
             'readings': [{'stationId': r.station_id, 'period': r.period, 'parameter': r.parameter,
-                          'value': r.value, 'sourceUrl': r.source_url, 'title': r.title,
+                          'value': r.value, 'sourceUrl': r.source_url, 'sourceKind': r.source_kind,
+                          'sourceOrganization': r.source_organization, 'sourceDate': r.source_date,
+                          'sourceReference': r.source_reference, 'title': r.title,
                           'method': r.method, 'editor': r.updated_by, 'updatedAt': r.updated_at.isoformat()}
                          for r in rows]}

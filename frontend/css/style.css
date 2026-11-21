@@ -564,3 +564,10 @@ html[data-theme="dark"] .api-status-bar[data-state="offline"]{background:#4a3619
 .manager-session .button{width:auto}
 
 .api-refresh-button{display:inline-flex;width:auto;margin-left:.7rem;padding:.26rem .65rem;border:1px solid currentColor;border-radius:7px;background:transparent;color:inherit;font-size:.8rem;cursor:pointer}
+
+/* Phase 9: source evidence selectors */
+.manager-source-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.manager-source-options label{font-size:.88rem;justify-content:flex-start;padding:10px 9px}
+.manager-required-hint{font-weight:500;color:var(--muted)}
+.manager-side [hidden]{display:none!important}
+@media(max-width:470px){.manager-source-options{grid-template-columns:1fr}}

@@ -67,3 +67,8 @@ From `backend/`: `python -m pytest -q tests` (install `pytest` and `httpx` if no
 ## Deployment warning
 
 **Render Free PostgreSQL expires after 30 days**, so it is not an appropriate long-term shared database. Plan a paid PostgreSQL database or migration/backup. Render free web services may sleep and respond slowly to the first request. Current prices and limits can change.
+
+
+## Phase 9: Online and Offline Source documentation
+
+Manage Data offers two source citation choices in addition to its three update methods. Online sources require an HTTP(S) URL. Offline sources require title, issuing organization and publication date/year (no URL). See `docs/PHASE9_ONLINE_OFFLINE_SOURCES.md`. The backend applies a non-destructive schema upgrade to existing PostgreSQL records at startup.

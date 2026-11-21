@@ -21,7 +21,14 @@ window.LakeWatchExplorer = (() => {
     for (const station of dataset.stations) for (const period of dataset.periods) for (const param of dataset.parameters) {
       const sample=station.samples.find(s=>s.period===period);
       const raw=sample ? sample.values[param.id] ?? null : null;
-      rows.push({stationId:station.id,station:station.name,zone:station.zone,period,parameterId:param.id,parameter:param.name,value:raw,unit:param.unit,kind:classify(raw),source:sample?.sources?.[param.id] || (period <= "2023-12" ? dataset.metadata.source2023Url : dataset.metadata.source2026Url)});
+      const provenance=sample?.provenance?.[param.id] || null;
+      const sourceKind=provenance?.sourceKind || 'online';
+      const sourceURL=provenance ? (provenance.sourceKind==='offline'?'':provenance.sourceUrl || sample?.sources?.[param.id] || '')
+        : raw!==null ? (sample?.sources?.[param.id] || (period <= '2023-12' ? dataset.metadata.source2023Url : dataset.metadata.source2026Url)) : '';
+      rows.push({stationId:station.id,station:station.name,zone:station.zone,period,parameterId:param.id,parameter:param.name,value:raw,unit:param.unit,kind:classify(raw),
+        sourceKind:raw===null?'':sourceKind,source:sourceURL,title:provenance?.title || '',
+        organization:provenance?.sourceOrganization || '',publicationDate:provenance?.sourceDate || '',
+        reference:provenance?.sourceReference || ''});
     }
     function setControls() {
       $("station-filter").innerHTML='<option value="">All stations</option>'+dataset.stations.map(s=>`<option value="${escape(s.id)}">${escape(s.name)} — ${escape(s.zone)}</option>`).join('');
@@ -51,7 +58,7 @@ window.LakeWatchExplorer = (() => {
         if(station && r.stationId!==station)return false;
         if(param && r.parameterId!==param)return false;
         if(period && r.period!==period)return false;
-        if(search && ![r.stationId,r.station,r.zone,labelMonth(r.period),r.parameter,r.value,r.unit,r.kind].join(' ').toLowerCase().includes(search))return false;
+        if(search && ![r.stationId,r.station,r.zone,labelMonth(r.period),r.parameter,r.value,r.unit,r.kind,r.title,r.organization,r.reference].join(' ').toLowerCase().includes(search))return false;
         return true;
       });
       selected.sort((a,b)=>{
@@ -84,14 +91,14 @@ window.LakeWatchExplorer = (() => {
     }
     function downloadCSV(){
       if(!selected.length)return;
-      const header=['Station ID','Station','Bay / area','Month','Parameter','Reported value','Unit','Value type','Official source URL'];
-      const lines=[header,...selected.map(r=>[r.stationId,r.station,r.zone,r.period,r.parameter,r.value===null?'':r.value,r.unit,r.kind,r.source])].map(fields=>fields.map(csvEscape).join(','));
+      const header=['Station ID','Station','Bay / area','Month','Parameter','Reported value','Unit','Value type','Source Type','Report / document title','Original source URL','Issuing organization','Publication date','Reference / pages'];
+      const lines=[header,...selected.map(r=>[r.stationId,r.station,r.zone,r.period,r.parameter,r.value===null?'':r.value,r.unit,r.kind,r.sourceKind,r.title,r.source,r.organization,r.publicationDate,r.reference])].map(fields=>fields.map(csvEscape).join(','));
       const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
       const href=URL.createObjectURL(blob);
       const anchor=document.createElement('a');anchor.href=href;anchor.download=`LakeWatch_Laguna_Observations_${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(anchor);anchor.click();anchor.remove();
       setTimeout(()=>URL.revokeObjectURL(href),1500);
-      $("explorer-export-status").textContent=`Exported ${selected.length} filtered records to CSV. Values and source links retained.`;
+      $("explorer-export-status").textContent=`Exported ${selected.length} filtered records to CSV with online/offline citations where provided.`;
     }
     function initialize(){if(ready)return;ready=true;setControls();render();}
     return {initialize,refresh:render};

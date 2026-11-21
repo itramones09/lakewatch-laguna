@@ -372,11 +372,27 @@
       <div class="side-divider"></div>
       <label class="form-label" for="manager-editor">Entered / reviewed by</label>
       <input class="search-input" id="manager-editor" maxlength="100" placeholder="Name of person reviewing the data" required>
-      <label class="form-label" for="manager-source-title">Source / report title</label>
-      <input class="search-input" id="manager-source-title" maxlength="160" placeholder="e.g. LLDA Q3 2026 report">
-      <label class="form-label" for="manager-source">Original source URL</label>
-      <input class="search-input" id="manager-source" placeholder="https://... (required when not in the import file)" type="url">
-      <p class="module-caption">Use a source you can verify. A source link does not automatically make the data official.</p>
+      <div class="side-divider"></div>
+      <h3>Source documentation</h3>
+      <div class="manager-methods manager-source-options" role="group" aria-label="Source evidence type">
+        <label><input type="radio" name="manager-source-kind" value="online" checked> Online Source</label>
+        <label><input type="radio" name="manager-source-kind" value="offline"> Offline Source</label>
+      </div>
+      <label class="form-label" for="manager-source-title">Report / document title <span id="manager-title-hint" class="manager-required-hint">(recommended)</span></label>
+      <input class="search-input" id="manager-source-title" maxlength="160" placeholder="e.g. LLDA quarterly water quality report">
+      <div id="manager-online-fields">
+        <label class="form-label" for="manager-source">Original source URL <span class="manager-required-hint">(required)</span></label>
+        <input class="search-input" id="manager-source" placeholder="https://..." type="url">
+      </div>
+      <div id="manager-offline-fields" hidden>
+        <label class="form-label" for="manager-source-organization">Issuing organization <span class="manager-required-hint">(required)</span></label>
+        <input class="search-input" id="manager-source-organization" maxlength="160" placeholder="e.g. LLDA, university or laboratory">
+        <label class="form-label" for="manager-source-date">Publication date or year <span class="manager-required-hint">(required)</span></label>
+        <input class="search-input" id="manager-source-date" maxlength="10" placeholder="YYYY, YYYY-MM or YYYY-MM-DD" inputmode="numeric">
+        <label class="form-label" for="manager-source-reference">Reference / pages <span class="manager-required-hint">(optional)</span></label>
+        <input class="search-input" id="manager-source-reference" maxlength="250" placeholder="Report number, page, table or archive location">
+      </div>
+      <p class="module-caption">Choose how the original measurement is documented. Offline sources do not require a URL. Both types are reviewed before publication.</p>
       <div class="side-divider"></div>
       <h3>Shared database</h3>
       <p class="module-caption" id="manager-storage-info">Approved updates appear for every visitor.</p>
@@ -399,8 +415,8 @@
         <div id="manager-file" class="manager-method-panel" hidden>
           <label class="form-label" for="manager-upload">Upload CSV, XLSX, XLS or JSON</label>
           <input id="manager-upload" class="manager-file-input" type="file" accept=".csv,.xlsx,.xls,.json">
-          <p class="module-caption">Headers: Station ID, Month, Parameter, Reported value, Unit, Official source URL. Excel support needs the spreadsheet library to load online.</p>
-          <div class="manager-inline-actions"><button class="button" id="manager-template" type="button">Download CSV template</button><button class="button button--primary" id="manager-file-preview" type="button">Preview uploaded file</button></div>
+          <p class="module-caption">CSV and Excel can include a Source Type column and either an Official Source URL or offline citation columns. Fields in the source panel apply when import rows omit them.</p>
+          <div class="manager-inline-actions"><button class="button" id="manager-template-online" type="button">Online CSV template</button><button class="button" id="manager-template-offline" type="button">Offline CSV template</button><button class="button button--primary" id="manager-file-preview" type="button">Preview uploaded file</button></div>
         </div>
         <div id="manager-url-panel" class="manager-method-panel" hidden>
           <label class="form-label" for="manager-url">Direct CSV or JSON data URL</label>
@@ -414,8 +430,8 @@
         <div class="panel-heading"><h3>Validation preview</h3><span class="tag" id="manager-preview-count">No records prepared</span></div>
         <div class="manager-preview-summary" id="manager-preview-summary">All changes are reviewed before they become visible.</div>
         <div class="table-scroll manager-table"><table>
-          <thead><tr><th>Row</th><th>Station</th><th>Month</th><th>Parameter</th><th>Reading</th><th>Result</th></tr></thead>
-          <tbody id="manager-preview-body"><tr><td colspan="6" class="table-empty">Prepare records to see validation results.</td></tr></tbody>
+          <thead><tr><th>Row</th><th>Station</th><th>Month</th><th>Parameter</th><th>Reading</th><th>Source</th><th>Result</th></tr></thead>
+          <tbody id="manager-preview-body"><tr><td colspan="7" class="table-empty">Prepare records to see validation results.</td></tr></tbody>
         </table></div>
         <label class="manager-confirm"><input type="checkbox" id="manager-allow-replace"> Allow administrator-approved corrections to replace previously published readings (the source report files remain unchanged).</label>
         <button class="button button--primary manager-save" id="manager-save" type="button" disabled>Save validated readings</button>
@@ -439,7 +455,7 @@
 <p><strong>Course:</strong> WITM 101 — Advanced Web Design and Programming<br/><strong>Program:</strong> Master in Information Technology<br/><strong>Campus:</strong> Laguna State Polytechnic University – San Pablo City Campus.</p>
 <p><strong>Developers:</strong> Ian Titus F. Ramones and Dycyn T. Alvaro.</p>
 <h3>Updating the Data</h3>
-<p>The Manage Data module supports manually reviewed readings, CSV/Excel uploads and direct CORS-enabled CSV/JSON URLs. Changes are locally stored in your browser, not published to a shared server. Download a JSON backup to move updates between computers. Source review remains the user's responsibility.</p>
+<p>The Manage Data module supports manual entry, CSV/Excel uploads, and direct CORS-enabled CSV/JSON links. Authorized updates are stored in the shared Render PostgreSQL database. Every update must identify either an Online Source (valid URL) or an Offline Source (report title, issuing organization, and publication year/date). Offline references do not upload scanned documents. Administrators can download a JSON backup of approved updates. All source claims must be checked before publication.</p>
 <h3>Measurement Parameters</h3>
 <p>The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
 <details class="method-details"><summary>Data accuracy, historical coverage and station chronology</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>

@@ -140,7 +140,15 @@
     const root = $("station-profile");
     const measurementSource = selectedPeriod > "2023-12" ? dataset.metadata.source2026Url : dataset.metadata.source2023Url;
     const sourceLabel = selectedPeriod > "2023-12" ? "Q2 2026" : "Q4 2023";
-    const imported = Object.values(sampleAt(s)?.provenance||{}).length > 0;
+    const provenanceRows = Object.entries(sampleAt(s)?.provenance||{});
+    const imported = provenanceRows.length > 0;
+    const provenanceDetails = provenanceRows.map(([parameter,entry]) => {
+      const citation=[entry.title,entry.sourceOrganization,entry.sourceDate,entry.sourceReference].filter(Boolean).join(' · ');
+      const source = entry.sourceKind==='offline' ? `${citation} (offline reference)` : citation;
+      const link = entry.sourceKind!=='offline' && entry.sourceUrl
+        ? ` · <a href="${safe(entry.sourceUrl)}" target="_blank" rel="noopener noreferrer">Open source</a>` : '';
+      return `<p><strong>${safe(parameter.toUpperCase())}:</strong> ${safe(source || 'Administrator-submitted source')} ${link}</p>`;
+    }).join('');
     root.innerHTML = `
       <div class="profile-heading">
         <div><h4>${safe(s.name)} — ${safe(s.zone)}</h4></div>
@@ -156,6 +164,7 @@
           <p><strong>Establishment note:</strong> ${safe(s.establishmentNote || "Not available")}</p>
           <p><strong>Location:</strong> ${safe(coordinateLabel(s))}</p>
           <p>${safe(s.coordinateNote)}</p>
+          ${provenanceDetails ? `<p><strong>Updated measurement citations (${safe(selectedPeriod)}):</strong></p>${provenanceDetails}` : ''}
           ${s.position && s.coordinateAccuracy === "published-research" ? `<p><strong>Published coordinates:</strong> ${s.position.lat}° N, ${s.position.lon}° E</p>` : ""}
           ${s.establishmentSource ? `<p><a href="${safe(s.establishmentSource)}" target="_blank" rel="noopener noreferrer">Monitoring history source ↗</a></p>` : ""}
           ${s.coordinateSource && s.position ? `<p><a href="${safe(s.coordinateSource)}" target="_blank" rel="noopener noreferrer">Location source ↗</a></p>` : ""}
@@ -163,7 +172,7 @@
       </details>
       <p class="data-source-line">${s.appStatus === "archived"
         ? "No monthly measurements are imported for this identifier; archived does not confirm official closure."
-        : imported ? "Some readings were administrator-updated in the shared database. Source links are available in Data Explorer; not a live sensor feed."
+        : imported ? "Some readings were administrator-updated in the shared database. Expand station sources for online/offline citations; not a live sensor feed."
         : `Measurements: <a href="${safe(measurementSource)}" target="_blank" rel="noopener noreferrer">LLDA ${sourceLabel} report</a> · Historical, not live.`}</p>
       ${s.position ? '<button class="button button--primary" type="button" data-show-station-map>Find station on map</button>' : '<p class="module-caption">Location not shown because no independent position has been verified.</p>'}`;
   }
