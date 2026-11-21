@@ -70,6 +70,8 @@ window.LakeWatchData = (() => {
     const method=()=>document.querySelector('input[name="manager-method"]:checked')?.value||'manual';
     const sourceKind=()=>document.querySelector('input[name="manager-source-kind"]:checked')?.value||'online';
     function showSourceKind(){
+      const urlImport=method()==='url';
+      $('manager-source-documentation').hidden=urlImport;
       const offline=sourceKind()==='offline';
       $('manager-online-fields').hidden=offline;
       $('manager-offline-fields').hidden=!offline;
@@ -88,17 +90,24 @@ window.LakeWatchData = (() => {
         const original=Object.keys(raw).find(k=>names.includes(norm(k)));
         obj[key]=raw[original??key]??raw[key]??'';
       }
-      const chosenKind=String(obj.sourceKind || sourceKind()).trim().toLowerCase();
+      // Importing directly from a URL is always an Online publication reference.
+      // For manual/file imports, a row-specific source kind and citation may override
+      // the citation panel, without leaking hidden fields from a different source type.
+      const directImport=sourceMethod==='url';
+      const chosenKind=directImport?'online':String(obj.sourceKind || sourceKind()).trim().toLowerCase();
+      const matchingPanel=!directImport && chosenKind===sourceKind();
+      const panelValue=id=>matchingPanel?$(id).value.trim():'';
       const fileDeclaredUrl=String(obj.sourceUrl??'').trim();
       const r={
         stationId:stationId(obj.stationId),period:String(obj.period??'').slice(0,7),parameter:paramId(obj.parameter),
         value:String(obj.value??'').trim().replace(/^<\s+/,'<'),
         sourceKind:chosenKind,
-        sourceUrl:chosenKind==='offline'?'':String(obj.sourceUrl || $('manager-source').value || (sourceMethod==='url'?$('manager-url').value:'')).trim(),
-        sourceOrganization:String(obj.sourceOrganization || $('manager-source-organization').value || '').trim(),
-        sourceDate:String(obj.sourceDate || $('manager-source-date').value || '').trim(),
-        sourceReference:String(obj.sourceReference || $('manager-source-reference').value || '').trim(),
-        title:String(obj.title || $('manager-source-title').value || '').trim(),method:sourceMethod
+        sourceUrl:directImport?$('manager-url').value.trim():(chosenKind==='offline'?'':String(obj.sourceUrl || panelValue('manager-source')).trim()),
+        sourceOrganization:String(obj.sourceOrganization || (directImport?$('manager-url-organization').value:panelValue('manager-source-organization'))).trim(),
+        sourceDate:String(obj.sourceDate || (directImport?$('manager-url-date').value:panelValue('manager-source-date'))).trim(),
+        sourceReference:String(obj.sourceReference || (directImport?$('manager-url-reference').value:panelValue('manager-source-reference'))).trim(),
+        title:String(obj.title || (directImport?$('manager-url-title').value:panelValue('manager-source-title'))).trim(),
+        method:sourceMethod
       };
       const unit=String(obj.unit??'').trim();let error='';
       if(!r.stationId)error='Unknown station ID';
@@ -108,10 +117,11 @@ window.LakeWatchData = (() => {
       else if(r.parameter==='ph' && Number(r.value.replace('<',''))>14)error='pH must be ≤14';
       else if(!['online','offline'].includes(r.sourceKind))error='Choose Online or Offline source';
       else if(r.sourceKind==='online' && !validURL(r.sourceUrl))error='Online source needs an HTTP(S) URL';
-      else if(r.sourceKind==='offline' && fileDeclaredUrl)error='Offline source row has a URL; select Online Source or clear the URL';
+      else if(!directImport && r.sourceKind==='offline' && fileDeclaredUrl)error='Offline source row has a URL; select Online Source or clear the URL';
       else if(r.sourceKind==='offline' && !r.title)error='Offline source needs a report/document title';
       else if(r.sourceKind==='offline' && !r.sourceOrganization)error='Offline source needs the issuing organization';
       else if(r.sourceKind==='offline' && !validSourceDate(r.sourceDate))error='Offline publication date: YYYY, YYYY-MM or YYYY-MM-DD';
+      else if(r.sourceDate && !validSourceDate(r.sourceDate))error='Publication date: YYYY, YYYY-MM or YYYY-MM-DD';
       else if(r.title.length>160 || r.sourceOrganization.length>160 || r.sourceReference.length>250)error='Source citation is too long';
       else if(unit && norm(unit)!==norm(params.find(p=>p.id===r.parameter).unit) && !(r.parameter==='ph'&&['none','ph','unitless'].includes(norm(unit))))error='Unit mismatch';
       return {...r,error};
@@ -219,12 +229,13 @@ window.LakeWatchData = (() => {
       document.querySelectorAll('input[name="manager-source-kind"]').forEach(radio=>radio.addEventListener('change',()=>{
         showSourceKind();invalidatePreview();
       }));
-      ['manager-source','manager-source-title','manager-source-organization','manager-source-date','manager-source-reference'].forEach(id=>{
+      ['manager-source','manager-source-title','manager-source-organization','manager-source-date','manager-source-reference',
+       'manager-url','manager-url-title','manager-url-organization','manager-url-date','manager-url-reference'].forEach(id=>{
         $(id).addEventListener('input',invalidatePreview);
       });
       document.querySelectorAll('input[name="manager-method"]').forEach(radio=>radio.addEventListener('change',()=>{
         const m=method();$('manager-manual').hidden=m!=='manual';$('manager-file').hidden=m!=='file';$('manager-url-panel').hidden=m!=='url';
-        prepared=[];renderPreview();say('Prepare readings for validation.');
+        showSourceKind();prepared=[];renderPreview();say('Prepare readings for validation.');
       }));
       $('manager-manual-preview').addEventListener('click',()=>{
         try{preview([{stationId:$('manager-station').value,period:$('manager-period').value,parameter:$('manager-parameter').value,value:$('manager-value').value}],'manual');}catch(e){say(e.message,'error');}

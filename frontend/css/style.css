@@ -571,3 +571,12 @@ html[data-theme="dark"] .api-status-bar[data-state="offline"]{background:#4a3619
 .manager-required-hint{font-weight:500;color:var(--muted)}
 .manager-side [hidden]{display:none!important}
 @media(max-width:470px){.manager-source-options{grid-template-columns:1fr}}
+
+/* Phase 9.1: separate update method from the underlying publication source. */
+.manager-source-auto{padding:12px 14px;border-left:4px solid var(--accent,#0f8b88);border-radius:8px;background:var(--panel-soft,#eff7f7);line-height:1.55}
+.manager-url-citation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.manager-url-citation label{display:grid;gap:6px;font-weight:600;font-size:.92rem}
+.manager-url-citation input{min-width:0}
+.manager-method-panel[hidden],#manager-source-documentation[hidden]{display:none!important}
+@media(max-width:620px){.manager-url-citation{grid-template-columns:1fr}}
+html[data-theme="dark"] .manager-source-auto{background:#21384a}

@@ -363,36 +363,38 @@
   <div class="manager-session" id="manager-session" hidden><span id="manager-session-label"></span><button class="button" type="button" id="manager-logout">Sign out</button></div>
   <div class="manager-layout" id="manager-layout" hidden>
     <aside class="panel manager-side">
-      <h3>Update method</h3>
-      <div class="manager-methods" role="group" aria-label="Data update method">
+      <h3>How to add data</h3>
+      <div class="manager-methods" role="group" aria-label="How to add data">
         <label><input type="radio" name="manager-method" value="manual" checked> Manual entry</label>
-        <label><input type="radio" name="manager-method" value="file"> CSV / Excel upload</label>
-        <label><input type="radio" name="manager-method" value="url"> Online source</label>
+        <label><input type="radio" name="manager-method" value="file"> Import CSV / Excel file</label>
+        <label><input type="radio" name="manager-method" value="url"> Import data from URL</label>
       </div>
       <div class="side-divider"></div>
       <label class="form-label" for="manager-editor">Entered / reviewed by</label>
       <input class="search-input" id="manager-editor" maxlength="100" placeholder="Name of person reviewing the data" required>
-      <div class="side-divider"></div>
-      <h3>Source documentation</h3>
-      <div class="manager-methods manager-source-options" role="group" aria-label="Source evidence type">
-        <label><input type="radio" name="manager-source-kind" value="online" checked> Online Source</label>
-        <label><input type="radio" name="manager-source-kind" value="offline"> Offline Source</label>
+      <div id="manager-source-documentation">
+        <div class="side-divider"></div>
+        <h3>Original data reference</h3>
+        <div class="manager-methods manager-source-options" role="group" aria-label="Original data reference type">
+          <label><input type="radio" name="manager-source-kind" value="online" checked> Online publication</label>
+          <label><input type="radio" name="manager-source-kind" value="offline"> Offline / printed document</label>
+        </div>
+        <label class="form-label" for="manager-source-title">Report / document title <span id="manager-title-hint" class="manager-required-hint">(recommended)</span></label>
+        <input class="search-input" id="manager-source-title" maxlength="160" placeholder="e.g. LLDA quarterly water quality report">
+        <div id="manager-online-fields">
+          <label class="form-label" for="manager-source">Original report URL <span class="manager-required-hint">(required)</span></label>
+          <input class="search-input" id="manager-source" placeholder="https://..." type="url">
+        </div>
+        <div id="manager-offline-fields" hidden>
+          <label class="form-label" for="manager-source-organization">Issuing organization <span class="manager-required-hint">(required)</span></label>
+          <input class="search-input" id="manager-source-organization" maxlength="160" placeholder="e.g. LLDA, university or laboratory">
+          <label class="form-label" for="manager-source-date">Publication date or year <span class="manager-required-hint">(required)</span></label>
+          <input class="search-input" id="manager-source-date" maxlength="10" placeholder="YYYY, YYYY-MM or YYYY-MM-DD" inputmode="numeric">
+          <label class="form-label" for="manager-source-reference">Reference / pages <span class="manager-required-hint">(optional)</span></label>
+          <input class="search-input" id="manager-source-reference" maxlength="250" placeholder="Report number, page, table or archive location">
+        </div>
+        <p class="module-caption">Identify the publication supporting the measurements, regardless of whether you enter them manually or upload a file.</p>
       </div>
-      <label class="form-label" for="manager-source-title">Report / document title <span id="manager-title-hint" class="manager-required-hint">(recommended)</span></label>
-      <input class="search-input" id="manager-source-title" maxlength="160" placeholder="e.g. LLDA quarterly water quality report">
-      <div id="manager-online-fields">
-        <label class="form-label" for="manager-source">Original source URL <span class="manager-required-hint">(required)</span></label>
-        <input class="search-input" id="manager-source" placeholder="https://..." type="url">
-      </div>
-      <div id="manager-offline-fields" hidden>
-        <label class="form-label" for="manager-source-organization">Issuing organization <span class="manager-required-hint">(required)</span></label>
-        <input class="search-input" id="manager-source-organization" maxlength="160" placeholder="e.g. LLDA, university or laboratory">
-        <label class="form-label" for="manager-source-date">Publication date or year <span class="manager-required-hint">(required)</span></label>
-        <input class="search-input" id="manager-source-date" maxlength="10" placeholder="YYYY, YYYY-MM or YYYY-MM-DD" inputmode="numeric">
-        <label class="form-label" for="manager-source-reference">Reference / pages <span class="manager-required-hint">(optional)</span></label>
-        <input class="search-input" id="manager-source-reference" maxlength="250" placeholder="Report number, page, table or archive location">
-      </div>
-      <p class="module-caption">Choose how the original measurement is documented. Offline sources do not require a URL. Both types are reviewed before publication.</p>
       <div class="side-divider"></div>
       <h3>Shared database</h3>
       <p class="module-caption" id="manager-storage-info">Approved updates appear for every visitor.</p>
@@ -419,9 +421,16 @@
           <div class="manager-inline-actions"><button class="button" id="manager-template-online" type="button">Online CSV template</button><button class="button" id="manager-template-offline" type="button">Offline CSV template</button><button class="button button--primary" id="manager-file-preview" type="button">Preview uploaded file</button></div>
         </div>
         <div id="manager-url-panel" class="manager-method-panel" hidden>
-          <label class="form-label" for="manager-url">Direct CSV or JSON data URL</label>
+          <label class="form-label" for="manager-url">Direct CSV or JSON data URL <span class="manager-required-hint">(required)</span></label>
           <input class="search-input" id="manager-url" type="url" placeholder="https://example.org/readings.csv">
-          <p class="module-caption">Only direct public CSV/JSON URLs that permit browser access (CORS) are supported. LLDA PDF pages cannot be imported directly; download and transcribe/convert the table first.</p>
+          <p class="manager-source-auto"><strong>Original data reference: Online publication</strong><br>The URL above is automatically recorded as the source of imported readings. No second source-type selection is needed.</p>
+          <div class="manager-url-citation">
+            <label>Report / data title <span class="manager-required-hint">(optional)</span><input class="search-input" id="manager-url-title" maxlength="160" placeholder="e.g. Official water quality observations"></label>
+            <label>Issuing organization <span class="manager-required-hint">(optional)</span><input class="search-input" id="manager-url-organization" maxlength="160" placeholder="e.g. LLDA"></label>
+            <label>Publication date / year <span class="manager-required-hint">(optional)</span><input class="search-input" id="manager-url-date" maxlength="10" placeholder="YYYY, YYYY-MM or YYYY-MM-DD"></label>
+            <label>Reference / pages <span class="manager-required-hint">(optional)</span><input class="search-input" id="manager-url-reference" maxlength="250" placeholder="Report or table number"></label>
+          </div>
+          <p class="module-caption">The data URL must point directly to public CSV or JSON and permit browser access (CORS). Convert PDF tables before importing.</p>
           <button class="button button--primary" id="manager-url-preview" type="button">Fetch and preview URL</button>
         </div>
         <p class="manager-message" id="manager-message" role="status" aria-live="polite">Choose a method to prepare records.</p>
@@ -455,7 +464,7 @@
 <p><strong>Course:</strong> WITM 101 — Advanced Web Design and Programming<br/><strong>Program:</strong> Master in Information Technology<br/><strong>Campus:</strong> Laguna State Polytechnic University – San Pablo City Campus.</p>
 <p><strong>Developers:</strong> Ian Titus F. Ramones and Dycyn T. Alvaro.</p>
 <h3>Updating the Data</h3>
-<p>The Manage Data module supports manual entry, CSV/Excel uploads, and direct CORS-enabled CSV/JSON links. Authorized updates are stored in the shared Render PostgreSQL database. Every update must identify either an Online Source (valid URL) or an Offline Source (report title, issuing organization, and publication year/date). Offline references do not upload scanned documents. Administrators can download a JSON backup of approved updates. All source claims must be checked before publication.</p>
+<p>The Manage Data module supports Manual Entry, CSV/Excel File Import, and Import from URL. Manual and file imports can cite an Online Publication (valid URL) or an Offline / Printed Document (report title, issuing organization, publication date). URL imports automatically record their data URL as an online reference. Offline citations do not upload scanned documents. Authorized updates are stored in the shared Render PostgreSQL database. Administrators can download a JSON backup of approved updates. All source claims must be checked before publication.</p>
 <h3>Measurement Parameters</h3>
 <p>The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
 <details class="method-details"><summary>Data accuracy, historical coverage and station chronology</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
