@@ -241,6 +241,8 @@
     const chosen = $("view-" + name);
     if (!chosen) return;
     currentView = name;
+    // Keep the chosen module visible after a safe page reload.
+    try { window.sessionStorage.setItem('lakewatch-current-view', name); } catch (_) {}
     views.forEach(view => { view.hidden = view !== chosen; });
     navButtons.forEach(button => {
       const active = button.dataset.view === name;
@@ -398,6 +400,11 @@
     }
   }
   window.addEventListener("lakewatch-theme-change",()=>{ if(currentView==="analytics") { analyticsManager?.refresh(); historicalManager?.refresh?.(); } });
-  showView("overview");
+  let initialView = 'overview';
+  try {
+    const stored = window.sessionStorage.getItem('lakewatch-current-view');
+    if (stored && $("view-" + stored)) initialView = stored;
+  } catch (_) {}
+  showView(initialView);
   start();
 })();
