@@ -8,7 +8,7 @@
 <title>LakeWatch Laguna | Water Quality Monitoring</title>
 <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
 <script>
-    // Apply the saved theme before styles load. Defaults to system.
+    // Apply the saved color scheme before styles load; follow the device until an explicit selection.
     (() => {
       let preference = "system";
       try {
@@ -54,21 +54,16 @@
 <button type="button" id="global-admin-login" class="global-admin-button" disabled aria-label="Administrator sign in" data-admin-login>
   <span class="global-admin-icon" aria-hidden="true">♙</span><span id="global-admin-label">Admin sign in</span>
 </button>
-<details class="appearance-settings" id="appearance-settings">
-<summary aria-label="Open appearance settings">
-<span aria-hidden="true">⚙</span> Appearance <span class="appearance-current" id="appearance-current">System</span>
-</summary>
-<div aria-label="Appearance preferences" class="appearance-popover">
-<p class="appearance-heading">Display theme</p>
-<p class="appearance-description">Choose a theme or follow your device.</p>
-<fieldset aria-label="Choose display theme" class="appearance-options">
-<label class="appearance-option"><input name="appearance" type="radio" value="light"/><span aria-hidden="true">☀</span><span>Light<small>Always use light colors</small></span></label>
-<label class="appearance-option"><input name="appearance" type="radio" value="system"/><span aria-hidden="true">◐</span><span>System<small>Follow your device setting</small></span></label>
-<label class="appearance-option"><input name="appearance" type="radio" value="dark"/><span aria-hidden="true">☾</span><span>Dark<small>Always use dark colors</small></span></label>
-</fieldset>
-<p class="appearance-status" id="appearance-status" role="status">Theme is ready.</p>
-</div>
-</details>
+<button class="theme-toggle-button" id="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
+  <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20.8 14A8.6 8.6 0 0 1 10 3.2 8.7 8.7 0 1 0 20.8 14Z"/>
+  </svg>
+  <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
+  </svg>
+</button>
+<span id="theme-toggle-status" class="visually-hidden" role="status" aria-live="polite"></span>
 </div>
 </header>
 <div class="api-status-bar" id="api-status-bar" role="status" aria-live="polite">Connecting to shared readings… <button class="api-refresh-button" id="api-refresh-button" type="button" hidden>Reload latest data</button></div>

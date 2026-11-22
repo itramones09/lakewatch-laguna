@@ -1,36 +1,59 @@
 "use strict";
-/* Accessible Light / Dark / System setting. Works across all six modules. */
+/* One-click light/dark theme toggle. The legacy system preference follows the OS until toggled. */
 (() => {
-  const key='lakewatch-appearance';
-  const options=['light','system','dark'];
-  const root=document.documentElement;
-  const media=window.matchMedia?.('(prefers-color-scheme: dark)');
-  const getPref=()=>options.includes(root.dataset.themePreference)?root.dataset.themePreference:'system';
-  function apply(pref) {
-    const choice=options.includes(pref)?pref:'system';
-    const resolved=choice==='system'?(media?.matches?'dark':'light'):choice;
-    root.dataset.themePreference=choice;
-    root.dataset.theme=resolved;
-    root.style.colorScheme=resolved;
-    document.getElementById('appearance-current').textContent=choice.charAt(0).toUpperCase()+choice.slice(1);
-    document.getElementById('appearance-status').textContent=`${choice.charAt(0).toUpperCase()+choice.slice(1)} selected · ${resolved} colors active`;
-    document.querySelectorAll('input[name="appearance"]').forEach(input=>input.checked=input.value===choice);
-    // The Analytics dashboard can refresh Chart.js axes when the theme changes.
-    window.dispatchEvent(new CustomEvent('lakewatch-theme-change',{detail:{preference:choice,resolved}}));
+  const storageKey = 'lakewatch-appearance';
+  const root = document.documentElement;
+  const systemPreference = window.matchMedia?.('(prefers-color-scheme: dark)');
+
+  function savedPreference() {
+    let pref = root.dataset.themePreference || 'system';
+    return ['light', 'dark', 'system'].includes(pref) ? pref : 'system';
   }
-  const initialize = () => {
-    apply(getPref());
-    document.querySelectorAll('input[name="appearance"]').forEach(input=>input.addEventListener('change',()=>{
-      try{localStorage.setItem(key,input.value);}catch(e){}
-      apply(input.value);
-      document.getElementById('appearance-settings').open=false;
+
+  function applyTheme(preference) {
+    const resolved = preference === 'system'
+      ? (systemPreference?.matches ? 'dark' : 'light')
+      : preference;
+    root.dataset.themePreference = preference;
+    root.dataset.theme = resolved;
+    root.style.colorScheme = resolved;
+
+    const button = document.getElementById('theme-toggle');
+    if (button) {
+      const action = resolved === 'dark' ? 'light' : 'dark';
+      button.setAttribute('aria-label', `Switch to ${action} mode`);
+      button.title = `Switch to ${action} mode`;
+      button.dataset.mode = resolved;
+    }
+
+    // Preserve the event consumed by charts and other responsive components.
+    window.dispatchEvent(new CustomEvent('lakewatch-theme-change', {
+      detail: { preference, resolved }
     }));
-    media?.addEventListener?.('change',()=>{if(getPref()==='system')apply('system');});
-    document.addEventListener('click',e=>{
-      const details=document.getElementById('appearance-settings');
-      if(details.open&&!details.contains(e.target))details.open=false;
+  }
+
+  function initialize() {
+    const button = document.getElementById('theme-toggle');
+    if (!button) return;
+    applyTheme(savedPreference());
+
+    button.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(storageKey, next); } catch (_) { /* Theme still works without storage. */ }
+      applyTheme(next);
+      const status = document.getElementById('theme-toggle-status');
+      if (status) status.textContent = `${next === 'dark' ? 'Dark' : 'Light'} mode enabled`;
     });
-  };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initialize,{once:true});
+
+    // Respect a previously saved System preference until someone clicks the toggle.
+    const syncSystem = () => {
+      if (savedPreference() === 'system') applyTheme('system');
+    };
+    if (systemPreference?.addEventListener) systemPreference.addEventListener('change', syncSystem);
+    else systemPreference?.addListener?.(syncSystem);
+  }
+
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
   else initialize();
 })();
