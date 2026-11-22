@@ -638,7 +638,7 @@ def pdf_report(
         canvas.rect(0,PAGE_H-34*mm,PAGE_W,2*mm,stroke=0,fill=1)
         logo=Path(__file__).parent/'assets'/'lakewatch-laguna-logo.png'
         if logo.exists():
-            try: canvas.drawImage(str(logo),16*mm,PAGE_H-28*mm,width=19*mm,height=19*mm,mask='auto')
+            try: canvas.drawImage(str(logo),18*mm,PAGE_H-25*mm,width=16*mm,height=16*mm,mask='auto',preserveAspectRatio=True,anchor='c')
             except Exception: pass
         canvas.setFillColor(colors.white)
         canvas.setFont('Helvetica-Bold',15)

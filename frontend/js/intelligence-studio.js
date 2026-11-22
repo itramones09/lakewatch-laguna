@@ -19,30 +19,56 @@ window.LakeWatchStudio = (() => {
   const readableValue = (raw,id) => raw==null||raw===''?'Not reported':`${raw}${unit(id)?' '+unit(id):''}`;
   const themeColor = id => ({do:'#2686c8',bod:'#e17d3a',ph:'#9573da',nitrate:'#0c9979',phosphate:'#cd568e',tss:'#b58a24'})[id]||'#0e9688';
   const setStatus=(id,msg,err=false)=>{const el=byId(id);if(el){el.textContent=msg;el.dataset.error=err?'true':'false'}};
+  // Ambient freshwater Class C references — these are NOT drinking-water or general safety cutoffs.
+  // Nitrate and phosphate require confirmation of the original chemical reporting basis.
+  const denr2016='https://pab.emb.gov.ph/wp-content/uploads/2017/07/DAO-2016-08-WQG-and-GES.pdf';
+  const denr2021='https://naro.law.upd.edu.ph/wp-content/uploads/2022/11/DENR-Administrative-Order-No-2021-19.pdf';
+  const guideline={
+    do:{reference:'At least 5 mg/L',threshold:5,test:'minimum',basis:'Dissolved oxygen (mg/L)',source:'DENR DAO 2016-08',url:denr2016,
+      meaning:'DO is the dissolved oxygen available to fish and other aquatic organisms. Lower readings can mean greater oxygen stress; concentrations vary with temperature, photosynthesis and sampling time.'},
+    bod:{reference:'At most 7 mg/L',threshold:7,test:'maximum',basis:'BOD (mg/L)',source:'DENR DAO 2016-08',url:denr2016,
+      meaning:'BOD measures oxygen consumed by microorganisms as they break down biodegradable organic matter. Higher BOD can contribute to declining oxygen conditions.'},
+    ph:{reference:'6.5–9.0 pH units',min:6.5,max:9,test:'range',basis:'pH (unitless)',source:'DENR DAO 2016-08',url:denr2016,
+      meaning:'pH indicates acidity or alkalinity. Values outside the guideline range can stress aquatic organisms and change chemical toxicity or nutrient availability.'},
+    nitrate:{reference:'At most 7 mg/L as NO₃–N',test:'basis-unverified',basis:'Guideline is nitrate-nitrogen (NO₃–N), not necessarily nitrate ion (NO₃)',source:'DENR DAO 2016-08',url:denr2016,
+      meaning:'Nitrate is a nutrient for algae and aquatic plants. Higher concentrations can contribute to nutrient enrichment, but low nitrate alone does not prove the lake has low nutrient pollution.'},
+    phosphate:{reference:'At most 0.025 mg/L as phosphorus (total/reactive)',test:'basis-unverified',basis:'Guideline is phosphate as phosphorus (P), not necessarily phosphate ion (PO₄)',source:'DENR DAO 2021-19',url:denr2021,
+      meaning:'Phosphate is an important nutrient for algal growth. Excess available phosphorus can contribute to eutrophication and oxygen problems after algae decompose.'},
+    tss:{reference:'At most 80 mg/L',threshold:80,test:'maximum',basis:'Total suspended solids (mg/L)',source:'DENR DAO 2016-08',url:denr2016,
+      meaning:'TSS measures suspended particles such as sediments and organic matter. Higher values can reduce light penetration and affect aquatic habitats.'}
+  };
   function interpret(paramId,value){
-    if(value==null||value==='')return {title:'No published measurement',detail:'This station and period do not have a value for this parameter. Missing data must not be read as zero.',note:'No comparison or compliance judgment is possible.'};
-    if(String(value).trim().startsWith('<')) return {title:'Below the reporting limit',detail:`The laboratory reported ${value} ${unit(paramId)}. This is an upper reporting bound, not zero or an exact measured concentration.`,note:'Exclude this qualified value from ordinary numeric averages or trend fitting.'};
+    const g=guideline[paramId];
+    if(!g)return {title:'Water-quality measurement',detail:'Review the original reported value, station and sample date.',note:'No benchmark configured.',status:'Not evaluated',tone:'neutral',reference:'Not available',basis:'',source:'',sourceUrl:''};
+    const base={reference:g.reference,basis:g.basis,source:g.source,sourceUrl:g.url,detail:g.meaning};
+    const raw=String(value??'').trim();
+    if(value==null||raw==='')return {...base,title:'No reported reading',status:'Cannot assess',tone:'neutral',note:'There is no reported measurement for this station and period. Missing means unknown, not zero.'};
+    if(raw.startsWith('<')||raw.startsWith('>'))return {...base,title:'Qualified laboratory result',status:'Not directly comparable',tone:'neutral',note:`The report states ${raw}${unit(paramId)?' '+unit(paramId):''}. This is a detection/reporting bound, not an exact measured value. It cannot be treated as zero or plotted as an exact numeric point.`};
     const n=exact(value);
-    if(n===null) return {title:'Qualified observation',detail:'Keep the original reported value and verify its qualifier before numeric analysis.',note:'Do not force this reading into numeric charts.'};
-    const explanations={
-      do:{title:n<5?'Low oxygen merits attention':'Oxygen available to aquatic organisms',detail:n<5?'This observation is below a commonly applied 5 mg/L freshwater Class C oxygen reference. Fish and other aquatic organisms may experience oxygen stress.':'Dissolved oxygen supports fish and other aquatic life. It changes with time of day, temperature and photosynthesis.',note:'DO screening reference requires confirmation of water classification and sampling conditions.'},
-      bod:{title:n>7?'Elevated oxygen demand':'Biodegradable organic load indicator',detail:n>7?'Higher biochemical oxygen demand can reflect additional biodegradable organic material and potential oxygen depletion.':'BOD measures oxygen consumed by microorganisms decomposing biodegradable organic material.',note:'Do not equate BOD with a measured pollutant source; applicability of any threshold needs confirmed methodology.'},
-      ph:{title:n<6.5?'Acidic condition warrants review':n>9?'Alkaline condition warrants review':'Acidity / alkalinity measurement',detail:n<6.5?'Lower pH may stress aquatic organisms and change chemical availability.':n>9?'Higher pH may stress aquatic organisms and influence ammonia toxicity.':'pH describes acidity or alkalinity. Ecological significance depends on water classification and other variables.',note:'pH screening only; no regulatory-compliance declaration is made.'},
-      nitrate:{title:'Nitrogen nutrient indicator',detail:'Nitrate supports plant and algal growth. Higher concentrations can contribute to nutrient enrichment, but a low nitrate result does not rule out other nitrogen forms.',note:'Do not compare NO₃ numerically with NO₃-N limits unless units and chemical basis are verified.'},
-      phosphate:{title:'Phosphorus nutrient indicator',detail:'Inorganic phosphate supports algae and plants; enrichment can contribute to excessive algal growth and subsequent oxygen consumption.',note:'Phosphate ion and phosphate-as-phosphorus have different reporting bases. Do not claim compliance from an unverified basis.'},
-      tss:{title:'Suspended-particle indicator',detail:'TSS represents the mass of particles in the water. Elevated concentrations may reduce light penetration and affect habitats.',note:'Rainfall, stirring of bottom sediment and local conditions affect TSS; compare like-for-like sampling periods.'}
-    };
-    return explanations[paramId]||{title:'Water-quality measurement',detail:'Interpret with the sample location, time, units and methodology.',note:'A single parameter cannot certify water safety.'};
+    if(n===null)return {...base,title:'Qualified laboratory result',status:'Not evaluated',tone:'neutral',note:'The reported measurement is not an exact numeric value; confirm the laboratory qualifier before comparison.'};
+    if(g.test==='basis-unverified')return {...base,title:'Nutrient enrichment indicator',status:'Reference only — unit basis unverified',tone:'neutral',note:`Reported value: ${readableValue(value,paramId)}. The imported dataset does not confirm the chemical basis required by the DENR guideline. Do not label this result within or outside the guideline until the original laboratory units and method are verified.`};
+    const meets=g.test==='minimum'?n>=g.threshold:g.test==='maximum'?n<=g.threshold:n>=g.min&&n<=g.max;
+    const boundary=g.test==='range'?(n===g.min||n===g.max):(n===g.threshold);
+    let note='';
+    if(paramId==='do')note=meets?`The observed ${n} mg/L DO meets the 5 mg/L Class C minimum. Oxygen was available at this sampling time, but conditions can change rapidly.`:`The observed ${n} mg/L DO is below the 5 mg/L Class C minimum; low oxygen may stress fish and other aquatic life.`;
+    if(paramId==='bod')note=meets?`The observed ${n} mg/L BOD is at or below the 7 mg/L Class C maximum. This suggests no exceedance for biodegradable oxygen demand at this sampling time.`:`The observed ${n} mg/L BOD exceeds the 7 mg/L Class C maximum and warrants investigation of organic loading.`;
+    if(paramId==='ph')note=meets?`The observed pH of ${n} lies within the 6.5–9.0 Class C range${boundary?', at the boundary':''}. It describes acidity/alkalinity, not whether the water is drinkable.`:`The observed pH of ${n} is outside the 6.5–9.0 Class C range. This may affect aquatic organisms and chemical behavior.`;
+    if(paramId==='tss')note=meets?`The observed ${n} mg/L TSS is at or below the 80 mg/L Class C maximum. Suspended particles can still vary after rain or sediment disturbance.`:`The observed ${n} mg/L TSS exceeds the 80 mg/L Class C maximum, suggesting substantial suspended-particle loading at this sampling time.`;
+    return {...base,title:meets?'Within the Class C screening reference':'Outside the Class C screening reference',status:meets?'Within reference':'Outside reference',tone:meets?'within':'outside',note};
   }
   function renderInterpretation({stationId,period}){
     if(!dataset)return;
     const station=st(stationId), target=byId('station-interpretation');if(!target||!station)return;
     const selected=target.dataset.selected && param(target.dataset.selected)?target.dataset.selected:dataset.parameters[0].id;
     const p=param(selected),value=rawValue(station,period,selected),info=interpret(selected,value);
-    target.innerHTML=`<div class="insight-head"><div><p class="eyebrow">Water-quality meaning</p><h4>Parameter Interpretation</h4></div><span class="tag">Reading guidance · not a safety certification</span></div>
+    target.innerHTML=`<div class="insight-head"><div><p class="eyebrow">What this reading means for Laguna de Bay</p><h4>Parameter Interpretation</h4></div><span class="tag">Class C freshwater · environmental screening</span></div>
       <div class="insight-tabs" role="group" aria-label="Choose a parameter">${dataset.parameters.map(x=>`<button type="button" data-interpret-param="${esc(x.id)}" class="insight-tab ${selected===x.id?'is-selected':''}" style="--accent:${themeColor(x.id)}" aria-pressed="${selected===x.id}">${esc(x.short)}</button>`).join('')}</div>
       <div class="insight-reading" style="--accent:${themeColor(selected)}"><div><span>${esc(p.name)}</span><strong>${esc(readableValue(value,selected))}</strong><small>${esc(station.name)} · ${esc(dateLabel(period))}</small></div><span aria-hidden="true">◉</span></div>
-      <div class="insight-explanation"><h5>${esc(info.title)}</h5><p>${esc(info.detail)}</p><p class="insight-note">${esc(info.note)}</p><small>Educational screening only. Always confirm classification, laboratory methods and the original source.</small></div>`;
+      <div class="insight-reference-grid">
+        <div class="insight-reference-card"><small>Class C freshwater guideline</small><strong>${esc(info.reference)}</strong><span>${esc(info.basis)}</span></div>
+        <div class="insight-reference-card"><small>Reading vs. guideline</small><strong class="insight-status insight-status--${esc(info.tone)}">${esc(info.status)}</strong><span>${esc(info.source)} — ambient water guideline</span></div>
+      </div>
+      <div class="insight-explanation"><h5>${esc(info.title)}</h5><p>${esc(info.detail)}</p><p class="insight-note"><strong>What this value suggests:</strong> ${esc(info.note)}</p><p class="insight-safety-note">Guidelines are screening references for Class C freshwater, <strong>not drinking-water or swimming-safety limits</strong>. Meeting one parameter guideline never proves that the lake is safe; full assessment requires other pollutants, sampling context, and verified laboratory methods.</p><small>Reference: ${link(info.sourceUrl,info.source)} · Applies only when station classification, parameter definition and units match.</small></div>`;
     target.querySelectorAll('[data-interpret-param]').forEach(b=>b.addEventListener('click',()=>{target.dataset.selected=b.dataset.interpretParam;renderInterpretation({stationId,period})}));
   }
   function populate(){
