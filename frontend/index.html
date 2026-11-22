@@ -36,6 +36,7 @@
 <script defer="" src="js/data-manager.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script defer src="js/intelligence-studio.js"></script>
+<script defer src="js/user-manual.js"></script>
 <script defer="" src="js/app.js"></script>
 </head>
 <body><a class="skip-link" href="#app-content">Skip to main content</a>
@@ -49,6 +50,7 @@
 </div>
 </div>
 <div class="header-actions">
+<button id="user-manual-toggle" class="global-manual-button" type="button" aria-expanded="false" aria-controls="user-manual-window" aria-label="Open user manual"><span aria-hidden="true">▤</span> User Manual</button>
 <button type="button" id="global-admin-login" class="global-admin-button" disabled aria-label="Administrator sign in" data-admin-login>
   <span class="global-admin-icon" aria-hidden="true">♙</span><span id="global-admin-label">Admin sign in</span>
 </button>
@@ -530,42 +532,83 @@
   </div>
 </section>
 
-<section aria-labelledby="about-title" class="view" hidden="" id="view-about">
-<div class="page-intro"><div><h2 id="about-title">About the Project &amp; Data Sources</h2><p class="module-caption">Review project information, data sources and methodology.</p></div></div>
-<div class="about-parameter-legend panel"><h3>Parameter color legend</h3><div class="parameter-legend" id="about-parameter-key"></div><p class="hint">Colors identify parameters, not water-quality ratings.</p></div>
-<article class="panel prose-panel">
-<h3>Project Purpose</h3>
-<p>LakeWatch Laguna is an academic web application for presenting Laguna de Bay water-quality monitoring information using interactive maps, JSON datasets and charts.</p>
-<h3>Academic Context</h3>
-<p><strong>Course:</strong> WITM 101 — Advanced Web Design and Programming<br/><strong>Program:</strong> Master in Information Technology<br/><strong>Campus:</strong> Laguna State Polytechnic University – San Pablo City Campus.</p>
-<p><strong>Developers:</strong> Ian Titus F. Ramones and Dycyn T. Alvaro.</p>
-<h3>Updating the Data</h3>
-<p>The Manage Data module supports Manual Entry, CSV/Excel File Import, and Import from URL. Manual and file imports can cite an Online Publication (valid URL) or an Offline / Printed Document (report title, issuing organization, publication date). URL imports automatically record their data URL as an online reference. Offline citations do not upload scanned documents. Authorized updates are stored in the shared Render PostgreSQL database. Administrators can download a JSON backup of approved updates. All source claims must be checked before publication.</p>
-<h3>Measurement Parameters and Environmental Intelligence</h3>
-<p>The interpretation engine explains six parameters and highlights uncertainty without declaring water-safe status. The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
-<details class="method-details"><summary>Data accuracy, historical coverage and station chronology</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
+<section aria-labelledby="about-title" class="view" hidden id="view-about">
+  <div class="about-shell">
+    <div class="page-intro about-page-intro"><div>
+      <p class="about-eyebrow">PROJECT INFORMATION</p>
+      <h2 id="about-title">About &amp; Sources</h2>
+      <p class="module-caption">Project purpose, academic attribution, data methods and source references.</p>
+    </div><button type="button" class="button about-help-button" data-manual-open="about">How to use this page</button></div>
 
+    <article class="panel about-academic-card" aria-labelledby="about-academic-title">
+      <div class="about-academic-header"><span class="about-academic-emblem" aria-hidden="true">🎓</span><div>
+        <span class="about-card-overline">ACADEMIC CONTEXT</span>
+        <h3 id="about-academic-title">Master in Information Technology · Final Project</h3>
+        <p>Laguna State Polytechnic University – San Pablo City Campus</p>
+      </div></div>
+      <div class="about-academic-details">
+        <div><span>Course</span><strong>WITM 101 — Advanced Web Design and Programming</strong></div>
+        <div><span>Program</span><strong>Master in Information Technology (MIT)</strong></div>
+        <div><span>Developers</span><strong>Ian Titus F. Ramones<br>Dycyn T. Alvaro</strong></div>
+        <div><span>Academic year</span><strong>2026</strong></div>
+      </div>
+    </article>
 
+    <div class="about-two-column">
+      <article class="panel about-info-card" aria-labelledby="about-purpose-title">
+        <div class="about-card-heading"><span class="about-icon about-icon--teal" aria-hidden="true">⌖</span><h3 id="about-purpose-title">Project purpose</h3></div>
+        <p>LakeWatch Laguna is an academic environmental information platform for exploring published Laguna de Bay monitoring measurements through interactive maps, station profiles, charts, and source-labeled reports.</p>
+        <p>It helps visitors locate monitoring areas, understand water-quality parameters, compare historical observations, and examine supporting environmental context.</p>
+        <p class="about-note"><strong>Data status:</strong> This is a publicly accessible website with shared data updates, not an official live LLDA water-quality sensor feed.</p>
+      </article>
+      <article class="panel about-info-card" aria-labelledby="about-capabilities-title">
+        <div class="about-card-heading"><span class="about-icon about-icon--blue" aria-hidden="true">▤</span><h3 id="about-capabilities-title">What you can do</h3></div>
+        <ul class="about-check-list">
+          <li>Explore mapped station areas and historical readings</li>
+          <li>Interpret six parameters and compare station results</li>
+          <li>Inspect annual historical trends and forecasting limits</li>
+          <li>Browse documented incidents and weather context</li>
+          <li>Export source-labeled PDF reports and filtered CSV</li>
+          <li>Submit verified updates through protected Manage Data</li>
+        </ul>
+      </article>
+    </div>
 
-<h3>Advanced Features</h3><p>Interpretation panels explain measured values without certifying compliance. Analytics includes matched-period station comparisons and an explainable linear trend model gated by data adequacy. Report Studio can export source-labeled PDFs. Incident reports are administrator-documented, not automatically confirmed by LLDA. Lake Context separates Open-Meteo air-temperature/rainfall estimates and separately curated environmental datasets from in-lake laboratory measurements.</p><h3>References</h3><ul><li><a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo Historical Weather API</a></li><li><a href="https://emb.gov.ph/wp-content/uploads/2019/04/DAO-2016-08_WATER-QUALITY-GUIDELINES-AND-GENERAL-EFFLUENT-STANDARDS.pdf" target="_blank" rel="noopener noreferrer">DENR Water Quality Guidelines (2016)</a></li><li><a href="https://r9.emb.gov.ph/wp-content/uploads/2023/09/DAO-2021-19-Updated-Water-Quality-Guidelines.pdf" target="_blank" rel="noopener noreferrer">DENR Updated Water Quality Guidelines (2021)</a></li></ul>
-<ul>
-<li><a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC, Laguna de Bay: Experiences and Lessons Learned, Table 3 (1990–2000 annual means)</a></li>
-<li><a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 Annual Water Quality Report (station additions and annual averages)</a></li>
-<li><a href="https://llda.gov.ph/wp-content/uploads/dox/ar/ar17.pdf" rel="noopener noreferrer" target="_blank">LLDA 2017 Annual Report (inconsistent VII/VIII South Bay label)</a></li>
-<li><a href="https://openstat.psa.gov.ph/PXWeb/pxweb/en/DB/DB__3A/0153A5DCLL0.px/" rel="noopener noreferrer" target="_blank">PSA / LLDA technical notes on 2021 station additions</a></li>
-<li><a href="https://llda.gov.ph/" rel="noopener noreferrer" target="_blank">Laguna Lake Development Authority (LLDA)</a></li>
-<li><a href="https://www.llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/2023/q4_2023.pdf" rel="noopener noreferrer" target="_blank">LLDA Quarterly Water Quality Report, October–December 2023 (PDF)</a></li>
-<li><a href="https://llda.gov.ph/wp-content/uploads/2026/waterqlty/2Q2026%20WATER%20QUALITY%20REPORT.pdf" rel="noopener noreferrer" target="_blank">LLDA Quarterly Water Quality Report, April–June 2026 (PDF)</a></li>
-<li><a href="https://llda.gov.ph/ldb-and-its-tributaries/" rel="noopener noreferrer" target="_blank">Official LLDA water-quality reports: newer published data</a></li>
-<li><a href="https://www.openstreetmap.org/relation/79348" rel="noopener noreferrer" target="_blank">Laguna de Bay — OpenStreetMap relation 79348</a></li>
-<li><a href="https://nominatim.org/release-docs/latest/api/Lookup/" rel="noopener noreferrer" target="_blank">Nominatim polygon lookup documentation</a></li>
-<li><a href="https://leafletjs.com/" rel="noopener noreferrer" target="_blank">Leaflet documentation</a></li>
-<li><a href="https://www.chartjs.org/" rel="noopener noreferrer" target="_blank">Chart.js documentation</a></li>
-<li><a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap attribution and license</a></li>
-</ul>
+    <article class="panel about-legend-card" aria-labelledby="about-legend-title">
+      <div class="about-card-heading"><span class="about-icon about-icon--violet" aria-hidden="true">◉</span><div><h3 id="about-legend-title">Water-quality parameter colors</h3><p class="about-subtitle">Use the same color key across the map, station readings and charts.</p></div></div>
+      <div class="parameter-legend" id="about-parameter-key" aria-label="Six parameter colors"></div>
+      <p class="about-footnote">Colors identify parameters only. They do not indicate safety, regulatory compliance or water suitability.</p>
+    </article>
 
+    <div class="about-two-column">
+      <article class="panel about-info-card" aria-labelledby="about-stewardship-title">
+        <div class="about-card-heading"><span class="about-icon about-icon--blue" aria-hidden="true">▣</span><h3 id="about-stewardship-title">Data stewardship</h3></div>
+        <p>Manage Data supports manual entry, CSV/Excel file import and import from a direct data URL. Manual/file observations may cite an online publication or a printed/offline document.</p>
+        <p>Administrator-approved observations are stored in a shared Render PostgreSQL database. Citations and review information should be checked before publication; offline citations do not upload document scans.</p>
+        <p class="about-note">Readings below reporting limits (for example, &lt;0.1) retain their original qualifiers. Historical values are not treated as real-time measurements.</p>
+      </article>
+      <article class="panel about-info-card" aria-labelledby="about-intelligence-title">
+        <div class="about-card-heading"><span class="about-icon about-icon--teal" aria-hidden="true">↗</span><h3 id="about-intelligence-title">Environmental intelligence</h3></div>
+        <p>Parameter interpretation is explanatory, not a regulatory certification. Multi-station comparison uses matched reporting periods, and forecasting requires adequate comparable observations.</p>
+        <p>Administrator-documented incident reports are separate from laboratory measurements. Lake Context presents Open-Meteo rainfall and <em>air</em> temperature separately from in-lake monitoring.</p>
+        <p class="about-note">Model forecasts are demonstrative estimates, not official LLDA predictions.</p>
+      </article>
+    </div>
 
-</article>
+    <article class="panel about-method-card" aria-labelledby="about-method-title">
+      <div class="about-card-heading"><span class="about-icon about-icon--gold" aria-hidden="true">≋</span><div><h3 id="about-method-title">Data methodology &amp; limitations</h3><p class="about-subtitle">Open the details to review record coverage, coordinate confidence and station chronology.</p></div></div>
+      <details class="method-details"><summary>Read historical coverage, station establishment evidence and map accuracy</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
+    </article>
+
+    <article class="panel about-references-card" aria-labelledby="about-references-title">
+      <div class="about-card-heading"><span class="about-icon about-icon--teal" aria-hidden="true">↗</span><div>
+        <h3 id="about-references-title">References &amp; source library</h3>
+        <p class="about-subtitle">Original reports, standards, map sources and technology documentation.</p>
+      </div></div>
+      <div class="about-reference-grid"><div class="about-reference-group"><h4>LLDA &amp; monitoring records</h4><ul><li><a href="https://llda.gov.ph/" target="_blank" rel="noopener noreferrer">Laguna Lake Development Authority (LLDA) <span aria-hidden="true">↗</span></a></li><li><a href="https://www.llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/2023/q4_2023.pdf" target="_blank" rel="noopener noreferrer">LLDA Quarterly Water Quality Report, October–December 2023 (PDF) <span aria-hidden="true">↗</span></a></li><li><a href="https://llda.gov.ph/wp-content/uploads/2026/waterqlty/2Q2026%20WATER%20QUALITY%20REPORT.pdf" target="_blank" rel="noopener noreferrer">LLDA Quarterly Water Quality Report, April–June 2026 (PDF) <span aria-hidden="true">↗</span></a></li><li><a href="https://llda.gov.ph/ldb-and-its-tributaries/" target="_blank" rel="noopener noreferrer">Official LLDA water-quality reports: newer published data <span aria-hidden="true">↗</span></a></li><li><a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" target="_blank" rel="noopener noreferrer">LLDA 2009–2012 Annual Water Quality Report (station additions and annual averages) <span aria-hidden="true">↗</span></a></li><li><a href="https://llda.gov.ph/wp-content/uploads/dox/ar/ar17.pdf" target="_blank" rel="noopener noreferrer">LLDA 2017 Annual Report (inconsistent VII/VIII South Bay label) <span aria-hidden="true">↗</span></a></li><li><a href="https://openstat.psa.gov.ph/PXWeb/pxweb/en/DB/DB__3A/0153A5DCLL0.px/" target="_blank" rel="noopener noreferrer">PSA / LLDA technical notes on 2021 station additions <span aria-hidden="true">↗</span></a></li></ul></div><div class="about-reference-group"><h4>Research &amp; environmental guidelines</h4><ul><li><a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" target="_blank" rel="noopener noreferrer">ILEC, Laguna de Bay: Experiences and Lessons Learned, Table 3 (1990–2000 annual means) <span aria-hidden="true">↗</span></a></li><li><a href="https://emb.gov.ph/wp-content/uploads/2019/04/DAO-2016-08_WATER-QUALITY-GUIDELINES-AND-GENERAL-EFFLUENT-STANDARDS.pdf" target="_blank" rel="noopener noreferrer">DENR Water Quality Guidelines (2016) <span aria-hidden="true">↗</span></a></li><li><a href="https://r9.emb.gov.ph/wp-content/uploads/2023/09/DAO-2021-19-Updated-Water-Quality-Guidelines.pdf" target="_blank" rel="noopener noreferrer">DENR Updated Water Quality Guidelines (2021) <span aria-hidden="true">↗</span></a></li></ul></div><div class="about-reference-group"><h4>Geographic data &amp; development tools</h4><ul><li><a href="https://www.openstreetmap.org/relation/79348" target="_blank" rel="noopener noreferrer">Laguna de Bay — OpenStreetMap relation 79348 <span aria-hidden="true">↗</span></a></li><li><a href="https://nominatim.org/release-docs/latest/api/Lookup/" target="_blank" rel="noopener noreferrer">Nominatim polygon lookup documentation <span aria-hidden="true">↗</span></a></li><li><a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet documentation <span aria-hidden="true">↗</span></a></li><li><a href="https://www.chartjs.org/" target="_blank" rel="noopener noreferrer">Chart.js documentation <span aria-hidden="true">↗</span></a></li><li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap attribution and license <span aria-hidden="true">↗</span></a></li></ul></div><div class="about-reference-group"><h4>Weather &amp; lake context</h4><ul><li><a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo Historical Weather API <span aria-hidden="true">↗</span></a></li></ul></div></div>
+      <p class="about-footnote">External links open in a new browser tab. Their contents and availability are controlled by their publishers.</p>
+    </article>
+  </div>
 </section>
 </main>
 <footer class="site-footer">
@@ -573,6 +616,27 @@
 <span>Developed by Ian Titus F. Ramones &amp; Dycyn T. Alvaro</span>
 <span>LSPU – San Pablo City Campus · 2026</span>
 </footer>
+
+<!-- Non-modal guidance: no backdrop, so other modules remain clickable. -->
+<aside id="user-manual-window" class="user-manual-window" aria-label="LakeWatch Laguna user manual" hidden>
+  <div class="manual-window-head" id="manual-drag-handle">
+    <div class="manual-window-title"><span class="manual-window-icon" aria-hidden="true">▤</span><div>
+      <strong id="manual-window-title">User Manual</strong><small>Keep browsing the app while the guide is open</small>
+    </div></div>
+    <div class="manual-window-actions">
+      <button type="button" id="manual-minimize" aria-label="Minimize user manual" title="Minimize">−</button>
+      <button type="button" id="manual-close" aria-label="Close user manual" title="Close">×</button>
+    </div>
+  </div>
+  <div class="manual-nav-header">SELECT A MODULE <span>Scroll tabs →</span></div>
+  <div id="manual-tabs" class="manual-tabs" role="tablist" aria-label="User manual modules"></div>
+  <div id="manual-content" class="manual-content" role="tabpanel" tabindex="0" aria-live="polite"></div>
+  <div class="manual-window-footer">
+    <span id="manual-current-location">Reading guide</span>
+    <button type="button" class="manual-open-module" id="manual-open-module">Open module <span aria-hidden="true">↗</span></button>
+  </div>
+</aside>
+<button type="button" id="manual-restore" class="manual-restore" hidden aria-label="Restore user manual">▤ Open User Manual</button>
 <dialog class="admin-auth-dialog" id="manager-auth-dialog" aria-labelledby="manager-auth-title" aria-describedby="manager-auth-description">
   <div class="admin-auth-inner">
     <div class="admin-auth-topline">

@@ -1,3 +1,7 @@
+## Phase 10.2: Floating User Manual & About page
+
+A non-blocking, draggable User Manual window now offers nine top-menu module guides, ordered instructions and quick navigation. About & Sources has a top Academic Context card, centered content, dedicated references and organized information cards. See `docs/PHASE10_2_USER_MANUAL_AND_ABOUT_LAYOUT.md` and `frontend/docs/USER_MANUAL_ALL_MODULES.md`. Frontend-only update; existing backend and database remain unchanged.
+
 # LakeWatch Laguna — Phase 10 Full-Stack Environmental Intelligence
 
 **Developers:** Ian Titus F. Ramones and Dycyn T. Alvaro  

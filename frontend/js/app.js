@@ -270,6 +270,7 @@
     const chosen = $("view-" + name);
     if (!chosen) return;
     currentView = name;
+    window.LakeWatchManual?.followView(name);
     // Keep the chosen module visible after a safe page reload.
     try { window.sessionStorage.setItem('lakewatch-current-view', name); } catch (_) {}
     views.forEach(view => { view.hidden = view !== chosen; });
