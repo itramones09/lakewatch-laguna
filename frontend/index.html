@@ -103,7 +103,7 @@
   <nav class="module-breadcrumb" aria-label="Current location">
     <span id="breadcrumb-category">Dashboard</span><span aria-hidden="true">/</span><strong id="breadcrumb-current">Environmental Overview</strong>
   </nav>
-  <button class="module-guide-link" id="view-help-button" type="button" data-manual-open="overview"><span aria-hidden="true">▤</span> Guide for this module</button>
+
 </div>
 <main class="app-content" id="app-content">
 
@@ -200,9 +200,22 @@
 <p class="module-caption">Green tags use published research coordinates; amber tags show approximate areas.</p>
 </aside>
 <div class="panel holy-grail__center">
-<div class="panel-heading"><h3>Laguna de Bay</h3><span class="tag tag--teal" id="map-layer-tag">Map + Station Areas</span></div>
-<div aria-label="Interactive Laguna de Bay map" id="map" role="region"></div>
-<p class="map-legal">Map tiles © OpenStreetMap contributors · Internet connection required.</p>
+<div class="panel-heading lake-map-heading">
+  <div class="lake-map-heading-copy"><h3>Laguna de Bay</h3><p class="map-head-caption" id="map-location-summary">Lake monitoring stations · historical reporting areas</p></div>
+  <div class="lake-map-header-actions">
+    <span class="tag tag--teal" id="map-layer-tag">Station locations</span>
+    <button class="button map-expand-btn" id="map-expand-view" type="button" aria-pressed="false" aria-controls="map" title="Expand the interactive map"><span aria-hidden="true">⛶</span> <span class="expand-text">Expand map</span></button>
+  </div>
+</div>
+<div class="lake-map-frame" id="lake-map-frame">
+  <div aria-label="Interactive Laguna de Bay map" id="map" role="region"></div>
+  <div class="map-basemap-picker" role="group" aria-label="Choose map background">
+    <button class="map-basemap-btn is-current" type="button" data-map-basemap="street" aria-pressed="true"><span aria-hidden="true">▦</span> Street</button>
+    <button class="map-basemap-btn" type="button" data-map-basemap="satellite" aria-pressed="false"><span aria-hidden="true">◉</span> Satellite</button>
+  </div>
+  <button class="map-expanded-close" type="button" id="map-expanded-close" aria-label="Exit expanded map">✕ <span>Close expanded map</span></button>
+</div>
+<p class="map-legal">Street © OpenStreetMap contributors · Satellite imagery © Esri and contributors. Station pins distinguish published research coordinates from approximate locations.</p>
 </div>
 <aside aria-label="Selected station details" class="panel holy-grail__right">
 <h3>Selected Station</h3>

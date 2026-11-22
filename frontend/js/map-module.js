@@ -22,6 +22,13 @@ window.LakeWatchMap = (() => {
   };
   function create({mapElement,onSelectStation,onCoordinate,onStatus,onBoundary}) {
     let map=null;
+    let activeBaseLayer=null;
+    let selectedBasemap='street';
+    let streetLayer=null, satelliteLayer=null;
+    const mapFrame=document.getElementById('lake-map-frame');
+    const expandButton=document.getElementById('map-expand-view');
+    const exitButton=document.getElementById('map-expanded-close');
+    const basemapButtons=[...document.querySelectorAll('[data-map-basemap]')];
     let boundaryLayer=null;
     let stationLayer=null;
     let incidentLayer=null;
@@ -158,15 +165,75 @@ window.LakeWatchMap = (() => {
     }
     function setIncidentReports(rows){incidentReports=Array.isArray(rows)?rows:[];redrawIncidents();}
     function showIncidents(v){incidentsVisible=v;if(!map||!incidentLayer)return;v?incidentLayer.addTo(map):map.removeLayer(incidentLayer);}
+    function safeGetMapPreference(){
+      try{return localStorage.getItem('lakewatch-map-basemap')==='satellite'?'satellite':'street';}
+      catch{return 'street';}
+    }
+    function saveMapPreference(mode){
+      try{localStorage.setItem('lakewatch-map-basemap',mode);}catch{}
+    }
+    function setBasemap(mode){
+      if(mode!=='street' && mode!=='satellite')return;
+      selectedBasemap=mode;
+      basemapButtons.forEach(button=>{
+        const current=button.dataset.mapBasemap===mode;
+        button.classList.toggle('is-current',current);
+        button.setAttribute('aria-pressed',String(current));
+      });
+      if(map){
+        const next=mode==='satellite'?satelliteLayer:streetLayer;
+        if(next && next!==activeBaseLayer){
+          if(activeBaseLayer)map.removeLayer(activeBaseLayer);
+          activeBaseLayer=next.addTo(map);
+        }
+      }
+      saveMapPreference(mode);
+    }
+    function updateMapViewport(){
+      if(!map)return;
+      requestAnimationFrame(()=>map.invalidateSize({pan:false}));
+      setTimeout(()=>map.invalidateSize({pan:false}),190);
+    }
+    function setExpanded(expanded){
+      if(!mapFrame)return;
+      mapFrame.classList.toggle('is-expanded',expanded);
+      document.body.classList.toggle('lake-map-expanded',expanded);
+      if(expandButton){
+        expandButton.setAttribute('aria-pressed',String(expanded));
+        expandButton.title=expanded?'Exit expanded map':'Expand the interactive map';
+        const text=expandButton.querySelector('.expand-text');
+        if(text)text.textContent=expanded?'Exit expanded map':'Expand map';
+      }
+      if(exitButton)exitButton.hidden=!expanded;
+      updateMapViewport();
+    }
+    if(exitButton)exitButton.hidden=true;
+    exitButton?.addEventListener('click',()=>{setExpanded(false);expandButton?.focus();});
+    basemapButtons.forEach(button=>button.addEventListener('click',()=>setBasemap(button.dataset.mapBasemap)));
+    expandButton?.addEventListener('click',()=>setExpanded(!mapFrame?.classList.contains('is-expanded')));
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape' && mapFrame?.classList.contains('is-expanded')){
+        setExpanded(false);expandButton?.focus();
+      }
+    });
     function initialize(data,stationId,period,param){
       dataset=data;currentStation=stationId;currentPeriod=period;currentParameter=param;
       if(map)return;
       if(typeof L==='undefined'){onStatus('Leaflet did not load. Check internet access.');return;}
       map=L.map(mapElement,{zoomControl:true,scrollWheelZoom:true,preferCanvas:false});
       map.fitBounds(lakeBounds,{padding:[16,16]});
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      streetLayer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
         maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).on('tileerror',()=>onStatus('Map tiles could not load — check internet connection')).addTo(map);
+      }).on('tileerror',()=>{
+        if(selectedBasemap==='street')onStatus('Street map tiles could not load — check internet connection');
+      });
+      satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+        maxZoom:19,
+        attribution:'Satellite tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a>, Vantor, Earthstar Geographics and GIS contributors'
+      }).on('tileerror',()=>{
+        if(selectedBasemap==='satellite')onStatus('Satellite imagery is unavailable. Try Street view.');
+      });
+      setBasemap(safeGetMapPreference());
       L.control.scale({imperial:false}).addTo(map);
       map.on('click',({latlng})=>onCoordinate(`${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`));
       addStations();
@@ -174,6 +241,8 @@ window.LakeWatchMap = (() => {
       const verified=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy==='published-research').length;
       const approx=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy!=='published-research').length;
       onStatus(`${markers.size} station tags: ${verified} published-coordinate and ${approx} approximate-area pins; ${dataset.stations.length-markers.size} unlocated`);
+      const countNode=document.getElementById('map-location-summary');
+      if(countNode)countNode.textContent=`${markers.size} mapped lake stations · ${verified} research-coordinate locations · ${approx} approximate areas · ${dataset.stations.length-markers.size} unlocated records`;
       loadBoundary();
     }
     function selectStation(id,{zoom=false,openPopup=false}={}){
@@ -191,7 +260,7 @@ window.LakeWatchMap = (() => {
     function showBoundary(v){showOutline=v;if(!map||!boundaryLayer)return;v?boundaryLayer.addTo(map):map.removeLayer(boundaryLayer);}
     function showStations(v){showPins=v;if(!map||!stationLayer)return;v?stationLayer.addTo(map):map.removeLayer(stationLayer);}
     function resetView(){map?.fitBounds(lakeBounds,{padding:[16,16]});}
-    function invalidateSize(){if(!map)return;map.invalidateSize();if(!sizeChecked){resetView();sizeChecked=true;}}
+    function invalidateSize(){if(!map)return;map.invalidateSize();if(!sizeChecked){resetView();sizeChecked=true;} else updateMapViewport();}
     return {initialize,selectStation,setSelection,showBoundary,showStations,showIncidents,setIncidentReports,resetView,invalidateSize};
   }
   return {create};

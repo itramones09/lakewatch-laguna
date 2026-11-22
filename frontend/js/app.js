@@ -93,8 +93,6 @@
     const currentNode = $("breadcrumb-current");
     if (categoryNode) categoryNode.textContent = category;
     if (currentNode) currentNode.textContent = current;
-    const guide = $("view-help-button");
-    if (guide) guide.dataset.manualOpen = name;
     document.querySelectorAll(".nav-group").forEach(group => {
       const active = group.dataset.navGroup === groupKey;
       group.classList.toggle("has-active", active);

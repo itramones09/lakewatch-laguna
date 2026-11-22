@@ -52,3 +52,6 @@ python -m uvicorn app.main:app --reload
 ```
 
 For production, follow the deployment guide and keep existing Render secrets; never commit `.env`.
+
+### Phase 10.5 lake-only map UI update
+The lake-only map now uses a wider map-first layout, Street/Satellite basemap buttons, and an expanded view. The global User Manual replaces the redundant per-module guide link. See `docs/PHASE10_5_LAKE_ONLY_MAP_UI.md`.
