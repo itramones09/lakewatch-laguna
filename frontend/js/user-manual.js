@@ -9,10 +9,11 @@
       id: "overview", label: "Overview", kicker: "Start here", title: "Environmental Overview",
       summary: "Your starting point for understanding Laguna de Bay's monitored areas, available parameters and historical coverage.",
       steps: [
-        ["Review the overview tiles", "Check the lake name, six parameters, station counts and number of imported monthly readings."],
-        ["Choose a water-quality parameter", "Click one of the six color-coded parameter shortcuts to open its analysis in Analytics."],
-        ["Use the feature shortcuts", "Open Compare & Predict, Lake Context, Report Studio or Incident Watch from the feature cards."],
-        ["Navigate to a workspace", "Use Browse stations, View analytics or Explore records, or select a module in the main navigation bar."],
+        ["Review the summary cards", "Check the station counts, latest reporting period and number of imported monthly values. These describe the dataset, not live sensor activity."],
+        ["Choose a water-quality parameter", "Click one of the six color-coded parameter shortcuts to open its charts and interpretation in Analytics."],
+        ["Choose a task", "Use the task cards to find a station, explore the map, compare observations or create a PDF report."],
+        ["Navigate by category", "Use Explore, Analysis & Reports, Administration, or Help & Information in the grouped navigation. The breadcrumb shows your current module."],
+        ["Open module-specific guidance", "Select Guide for this module above the page. The floating manual stays open while you continue using the website."],
       ],
       tip: "Parameter colors identify measurement types—not whether the lake water is safe or unsafe."
     },
@@ -22,7 +23,8 @@
       steps: [
         ["Choose the reporting month", "Use the Reporting month selector in Map Controls. The station values will update to the available measurements for that month."],
         ["Choose the parameter", "Use Parameter shown on markers to change which measurement is displayed on station tags."],
-        ["Select a monitoring station", "Click a station tag on the map, or choose it from Go to monitoring station. The Selected Station card will update."],
+        ["Find a monitoring station", "Type a station identifier or lake bay into Find a station. The station selector narrows to matching entries; choose a located station to zoom to it."],
+        ["Select a monitoring station", "Click a station tag on the map, or choose it from the filtered station selector. The Selected Station card will update."],
         ["Adjust map layers", "Use Show lake boundary, Show station markers and Show documented incident locations to control the visible layers."],
         ["Open the full profile", "Select Open Station Profile from the selected-station card to navigate to Monitoring Stations."],
         ["Inspect or submit incidents", "Scroll to Incident reporting to read dated source-documented incidents. Authorized administrators can sign in and publish a sourced report."],

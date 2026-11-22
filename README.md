@@ -1,3 +1,7 @@
+## Phase 10.3: User Experience & Navigation Enhancement
+
+The main navigation is grouped into task-based categories with a current-module breadcrumb and direct module guide. The Overview dashboard now summarizes dataset coverage, provides task-based shortcuts, and distinguishes shared database connectivity from historical water-quality observations. Lake Map adds station search, and Manage Data displays a four-step guided publishing workflow. This is a frontend-only update; existing API contracts, administrator credentials and PostgreSQL records are unchanged. See `docs/PHASE10_3_UX_ENHANCEMENT.md`.
+
 ## Phase 10.2: Floating User Manual & About page
 
 A non-blocking, draggable User Manual window now offers nine top-menu module guides, ordered instructions and quick navigation. About & Sources has a top Academic Context card, centered content, dedicated references and organized information cards. See `docs/PHASE10_2_USER_MANUAL_AND_ABOUT_LAYOUT.md` and `frontend/docs/USER_MANUAL_ALL_MODULES.md`. Frontend-only update; existing backend and database remain unchanged.

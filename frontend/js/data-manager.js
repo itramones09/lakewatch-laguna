@@ -77,8 +77,17 @@ window.LakeWatchData = (() => {
       $('manager-offline-fields').hidden=!offline;
       $('manager-title-hint').textContent=offline?'(required)':'(recommended)';
     }
+    function setWorkflowStep(activeStep){
+      document.querySelectorAll('[data-manager-step]').forEach(item=>{
+        const step=Number(item.dataset.managerStep);
+        const state=step<activeStep?'complete':step===activeStep?'current':'upcoming';
+        item.dataset.state=state;
+        if(state==='current')item.setAttribute('aria-current','step');
+        else item.removeAttribute('aria-current');
+      });
+    }
     function invalidatePreview(){
-      if(prepared.length){prepared=[];renderPreview();say('Source details changed. Preview the readings again before saving.');}
+      if(prepared.length){prepared=[];renderPreview();setWorkflowStep(2);say('Source details changed. Preview the readings again before saving.');}
     }
     const say=(message, level='info')=>{ $('manager-message').textContent=message;$('manager-message').dataset.level=level;};
     const authMessage=(message)=>{ $('manager-auth-message').textContent=message; };
@@ -158,7 +167,10 @@ window.LakeWatchData = (() => {
         if(seen.has(key)){r.error='Repeated station/month/parameter in file';r.status='error';return r;}
         seen.add(key);const prev=old.get(key);r.status=prev===undefined?'ready':prev===r.value?'duplicate':'conflict';return r;
       });
-      renderPreview();say(`Preview prepared: ${prepared.length} readings. Review and save to the shared database.`,'success');
+      renderPreview();
+      const canPublish=!prepared.some(record=>record.error) && prepared.some(record=>record.status==='ready'||record.status==='conflict');
+      setWorkflowStep(canPublish?4:3);
+      say(`Preview prepared: ${prepared.length} readings. Review and save to the shared database.`,'success');
     }
     async function readFile(){
       const file=$('manager-upload').files?.[0];if(!file)throw Error('Select a CSV, Excel or JSON file.');
@@ -221,7 +233,7 @@ window.LakeWatchData = (() => {
       if(prepared.some(r=>r.error))return say('Correct invalid rows first.','error');
       if(readings.some(r=>r.status==='conflict')&&!$('manager-allow-replace').checked)return say('Allow corrections before replacing existing readings.','error');
       if(!confirm(`Publish ${readings.length} reading(s) to the shared database? All visitors will see these updates.`))return;
-      $('manager-save').disabled=true;say('Publishing validated readings to the shared database…');
+      $('manager-save').disabled=true;setWorkflowStep(4);say('Publishing validated readings to the shared database…');
       try{
         const result=await api.saveBatch(readings.map(({stationId,period,parameter,value,sourceUrl,title,method,sourceKind,sourceOrganization,sourceDate,sourceReference})=>({stationId,period,parameter,value,sourceUrl,title,method,sourceKind,sourceOrganization,sourceDate,sourceReference})),$('manager-allow-replace').checked);
         say(`Saved ${result.saved} reading(s), ${result.unchanged} unchanged. Refreshing…`,'success');
@@ -238,6 +250,7 @@ window.LakeWatchData = (() => {
       $('manager-parameter').innerHTML=params.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${esc(p.unit)})</option>`).join('');
       $('manager-period').value=dataset.periods.at(-1);
       setAuthorized(false);
+      setWorkflowStep(1);
       $('manager-auth-close').addEventListener('click',closeLogin);
       authDialog.addEventListener('click',event=>{
         // Click on the backdrop (outside the dialog card) to dismiss.
@@ -270,17 +283,20 @@ window.LakeWatchData = (() => {
       }));
       ['manager-source','manager-source-title','manager-source-organization','manager-source-date','manager-source-reference',
        'manager-url','manager-url-title','manager-url-organization','manager-url-date','manager-url-reference'].forEach(id=>{
-        $(id).addEventListener('input',invalidatePreview);
+        $(id).addEventListener('input',()=>{setWorkflowStep(2);invalidatePreview();});
       });
+      ['manager-editor','manager-value','manager-period'].forEach(id=>$(id).addEventListener('input',()=>setWorkflowStep(2)));
+      ['manager-station','manager-parameter'].forEach(id=>$(id).addEventListener('change',()=>setWorkflowStep(2)));
+      $('manager-upload').addEventListener('change',()=>setWorkflowStep(2));
       document.querySelectorAll('input[name="manager-method"]').forEach(radio=>radio.addEventListener('change',()=>{
         const m=method();$('manager-manual').hidden=m!=='manual';$('manager-file').hidden=m!=='file';$('manager-url-panel').hidden=m!=='url';
-        showSourceKind();prepared=[];renderPreview();say('Prepare readings for validation.');
+        showSourceKind();prepared=[];renderPreview();setWorkflowStep(2);say('Complete the source details, then prepare readings for validation.');
       }));
       $('manager-manual-preview').addEventListener('click',()=>{
-        try{preview([{stationId:$('manager-station').value,period:$('manager-period').value,parameter:$('manager-parameter').value,value:$('manager-value').value}],'manual');}catch(e){say(e.message,'error');}
+        try{preview([{stationId:$('manager-station').value,period:$('manager-period').value,parameter:$('manager-parameter').value,value:$('manager-value').value}],'manual');}catch(e){setWorkflowStep(3);say(e.message,'error');}
       });
-      $('manager-file-preview').addEventListener('click',async()=>{try{say('Reading file…');preview(await readFile(),'file');}catch(e){say(e.message,'error');}});
-      $('manager-url-preview').addEventListener('click',async()=>{try{say('Fetching source…');preview(await readURL(),'url');}catch(e){say(e.message,'error');}});
+      $('manager-file-preview').addEventListener('click',async()=>{try{say('Reading file…');preview(await readFile(),'file');}catch(e){setWorkflowStep(3);say(e.message,'error');}});
+      $('manager-url-preview').addEventListener('click',async()=>{try{say('Fetching source…');preview(await readURL(),'url');}catch(e){setWorkflowStep(3);say(e.message,'error');}});
       $('manager-template-online').addEventListener('click',()=>download('LakeWatch_Online_Source_Template.csv',
         '"Station ID","Month","Parameter","Reported value","Unit","Source Type","Source Title","Official source URL"\r\n"","","","","","online","",""', 'text/csv'));
       $('manager-template-offline').addEventListener('click',()=>download('LakeWatch_Offline_Source_Template.csv',

@@ -73,60 +73,95 @@
 </header>
 <div class="api-status-bar" id="api-status-bar" role="status" aria-live="polite">Connecting to shared readings… <button class="api-refresh-button" id="api-refresh-button" type="button" hidden>Reload latest data</button></div>
 <nav aria-label="Main modules" class="site-nav">
-<button aria-current="page" class="nav-btn is-active" data-view="overview" type="button">Overview</button>
-<button class="nav-btn" data-view="map" type="button">Lake Map</button>
-<button class="nav-btn" data-view="stations" type="button">Monitoring Stations</button>
-<button class="nav-btn" data-view="analytics" type="button">Analytics</button>
-<button class="nav-btn" data-view="explorer" type="button">Data Explorer</button>
-<button class="nav-btn" data-view="context" type="button">Lake Context</button>
-<button class="nav-btn" data-view="reports" type="button">Reports</button>
-<button class="nav-btn" data-view="manage" type="button">Manage Data</button>
-<button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
+  <button aria-current="page" class="nav-btn nav-home is-active" data-view="overview" type="button"><span aria-hidden="true">⌂</span> Overview</button>
+  <details class="nav-group" data-nav-group="explore" data-nav-count="4 workspaces">
+    <summary><span class="nav-group-icon" aria-hidden="true">⌖</span><span class="nav-group-name">Explore</span><small class="nav-group-current" data-nav-current>4 workspaces</small><span class="nav-group-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="nav-group-menu" role="group" aria-label="Explore workspaces">
+      <button class="nav-btn" data-view="map" type="button">Lake Map</button>
+      <button class="nav-btn" data-view="stations" type="button">Monitoring Stations</button>
+      <button class="nav-btn" data-view="explorer" type="button">Data Explorer</button>
+      <button class="nav-btn" data-view="context" type="button">Lake Context</button>
+    </div>
+  </details>
+  <details class="nav-group" data-nav-group="analysis" data-nav-count="2 workspaces">
+    <summary><span class="nav-group-icon" aria-hidden="true">▥</span><span class="nav-group-name">Analysis &amp; Reports</span><small class="nav-group-current" data-nav-current>2 workspaces</small><span class="nav-group-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="nav-group-menu" role="group" aria-label="Analysis and reporting workspaces">
+      <button class="nav-btn" data-view="analytics" type="button">Analytics</button>
+      <button class="nav-btn" data-view="reports" type="button">Reports</button>
+    </div>
+  </details>
+  <details class="nav-group" data-nav-group="admin" data-nav-count="1 workspace">
+    <summary><span class="nav-group-icon" aria-hidden="true">♙</span><span class="nav-group-name">Administration</span><small class="nav-group-current" data-nav-current>1 workspace</small><span class="nav-group-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="nav-group-menu" role="group" aria-label="Administration workspace">
+      <button class="nav-btn" data-view="manage" type="button">Manage Data</button>
+    </div>
+  </details>
+  <details class="nav-group" data-nav-group="help" data-nav-count="1 page">
+    <summary><span class="nav-group-icon" aria-hidden="true">ⓘ</span><span class="nav-group-name">Help &amp; Information</span><small class="nav-group-current" data-nav-current>1 page</small><span class="nav-group-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="nav-group-menu" role="group" aria-label="Help and information">
+      <button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
+      <button class="nav-manual-link" data-manual-open="overview" type="button"><span aria-hidden="true">▤</span> Open User Manual</button>
+    </div>
+  </details>
 </nav>
+<div class="module-context-bar" id="module-context-bar">
+  <nav class="module-breadcrumb" aria-label="Current location">
+    <span id="breadcrumb-category">Dashboard</span><span aria-hidden="true">/</span><strong id="breadcrumb-current">Environmental Overview</strong>
+  </nav>
+  <button class="module-guide-link" id="view-help-button" type="button" data-manual-open="overview"><span aria-hidden="true">▤</span> Guide for this module</button>
+</div>
 <main class="app-content" id="app-content">
 
 <section aria-labelledby="overview-title" class="view" id="view-overview">
-<div class="page-intro">
-<div>
+  <div class="overview-hero page-intro">
+    <div>
+      <p class="eyebrow">LAKEWATCH LAGUNA · ENVIRONMENTAL MONITORING WORKSPACE</p>
+      <h2 id="overview-title">Environmental Overview</h2>
+      <p class="module-caption">Start with a station, parameter or reporting period. Water-quality observations are historical reports and administrator-published updates—not live sensor readings.</p>
+    </div>
+    <div class="overview-hero-actions">
+      <button class="button button--primary" data-open-view="map" type="button"><span aria-hidden="true">⌖</span> Explore the map</button>
+      <button class="button overview-secondary-action" data-open-view="stations" type="button">Browse stations</button>
+    </div>
+  </div>
 
-<h2 id="overview-title">Environmental Overview</h2>
-<p class="module-caption">Choose a parameter or open a module to explore the lake data.</p>
-</div>
-<button class="button button--primary" data-open-view="map" type="button">Explore the Map</button>
-</div>
-<div class="kpi-grid">
-<article class="panel metric-card"><span class="metric-caption">Monitored Lake</span><strong>Laguna de Bay</strong><small>Geographic region</small></article>
-<article class="panel metric-card"><span class="metric-caption">Parameters Reported</span><strong>6</strong><small>DO, BOD, pH, nitrate, phosphate, TSS</small></article>
-<article class="panel metric-card"><span class="metric-caption">Active / Archived Stations</span><strong id="overview-station-count">16 / 3</strong><small id="overview-status-caption">Recent data through June 2026</small></article>
-<article class="panel metric-card"><span class="metric-caption">Historical Readings</span><strong id="overview-reading-count">186</strong><small>Monthly reported values; 69 annual archive values available</small></article>
-</div>
-<section aria-labelledby="overview-color-heading" class="panel parameter-guide">
-<div class="panel-heading"><div><h3 id="overview-color-heading">Water-quality parameter color key</h3><p class="hint">Select a parameter to open its charts.</p></div><span class="tag">Parameter identity · not a safety rating</span></div>
-<div aria-label="Choose a parameter to analyze" class="parameter-shortcuts" id="overview-parameter-guide" role="group"></div>
-<p class="parameter-color-disclaimer">Colors identify parameters, not water-quality ratings.</p>
-</section>
-<section class="intelligence-launchpad" aria-label="Additional analysis tools">
-  <div class="launchpad-head"><p class="eyebrow">Discover more</p><h3>From observations to insight.</h3><p class="module-caption">Understand parameters, compare stations, explore environmental context and publish evidence-backed reports.</p></div>
-  <div class="launchpad-actions"><button type="button" data-open-view="analytics"><span class="launch-icon">↗</span><strong>Compare & predict</strong><small>Analytics Studio</small></button><button type="button" data-open-view="context"><span class="launch-icon">◌</span><strong>Lake context</strong><small>Weather & environmental records</small></button><button type="button" data-open-view="reports"><span class="launch-icon">▣</span><strong>Report Studio</strong><small>Professional PDF export</small></button><button type="button" data-open-view="map" data-scroll-target="incident-title"><span class="launch-icon">⌖</span><strong>Incident watch</strong><small>Evidence-backed event registry</small></button></div>
-</section>
-<div class="overview-grid">
-<article class="panel panel--large">
-<div class="panel-heading"><h3>Explore the data</h3><span class="tag tag--teal">Historical Archive · 1990–2026</span></div>
+  <div class="kpi-grid overview-kpis" aria-label="Dataset summary">
+    <article class="panel metric-card metric-card--accent"><span class="metric-icon" aria-hidden="true">⌖</span><span class="metric-caption">Stations with recent readings</span><strong id="overview-active-count">16</strong><small id="overview-active-caption">Based on the latest imported period</small></article>
+    <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">◷</span><span class="metric-caption">Archived / no recent readings</span><strong id="overview-archived-count">3</strong><small>Archived does not confirm official station closure.</small></article>
+    <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">▤</span><span class="metric-caption">Latest reporting period</span><strong id="overview-latest-period">June 2026</strong><small id="overview-latest-coverage">Reporting coverage is being calculated.</small></article>
+    <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">∑</span><span class="metric-caption">Monthly reported values</span><strong id="overview-reading-count">186</strong><small>Available values across the imported monthly dataset.</small></article>
+  </div>
 
-<div class="feature-list">
-<div><span aria-hidden="true" class="feature-icon">01</span><div><strong>Explore lake geography</strong><p>Select a station, parameter or reporting month on the interactive map.</p></div></div>
-<div><span aria-hidden="true" class="feature-icon">02</span><div><strong>Inspect monitoring stations</strong><p>Search stations and review measurements for the selected month.</p></div></div>
-<div><span aria-hidden="true" class="feature-icon">03</span><div><strong>Interpret measurements</strong><p>Compare stations, inspect trends and examine annual historical data.</p></div></div>
-</div>
-</article>
-<aside class="panel panel--accent"><h3>Quick access</h3>
-<p class="module-caption">Open the view you need.</p>
-<div class="quick-action-stack">
-<button class="button button--full" data-open-view="stations" type="button">Browse stations</button>
-<button class="button button--full" data-open-view="analytics" type="button">View analytics</button>
-<button class="button button--full" data-open-view="explorer" type="button">Explore records</button>
-</div></aside>
-</div>
+  <section class="overview-data-status panel" aria-labelledby="overview-data-status-title">
+    <div class="overview-status-copy"><span class="overview-status-mark" aria-hidden="true">✓</span><div><h3 id="overview-data-status-title">Understand the dataset</h3><p>LakeWatch Laguna is an online application. Its water-quality readings are historical source records and approved administrator updates, not a live LLDA sensor feed.</p></div></div>
+    <div class="overview-status-facts">
+      <div><span>Connection</span><strong id="overview-connection-label">Checking shared database…</strong></div>
+      <div><span>Parameters</span><strong>6 water-quality indicators</strong></div>
+      <div><span>Latest source period</span><strong id="overview-source-period">June 2026</strong></div>
+    </div>
+    <button class="overview-status-link" data-open-view="explorer" type="button">Explore records <span aria-hidden="true">→</span></button>
+  </section>
+
+  <section aria-labelledby="overview-color-heading" class="panel parameter-guide">
+    <div class="panel-heading"><div><h3 id="overview-color-heading">Choose a water-quality parameter</h3><p class="hint">Select a color-coded parameter to open its charts and interpretation.</p></div><span class="tag">Parameter identity · not a safety rating</span></div>
+    <div aria-label="Choose a parameter to analyze" class="parameter-shortcuts" id="overview-parameter-guide" role="group"></div>
+    <p class="parameter-color-disclaimer">Colors identify parameters, not water-quality ratings.</p>
+  </section>
+
+  <section class="overview-start-section" aria-labelledby="overview-start-title">
+    <div class="overview-section-heading"><div><p class="eyebrow">A SIMPLE WAY TO BEGIN</p><h3 id="overview-start-title">What would you like to do?</h3><p class="module-caption">Choose a task. Each workspace opens with the tools you need for that activity.</p></div><button class="overview-manual-link" type="button" data-manual-open="overview">Read the quick guide ↗</button></div>
+    <div class="overview-task-grid">
+      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--teal" aria-hidden="true">⌖</span><div><h4>Find a monitoring station</h4><p>Search by station identifier or lake bay, then open its profile and available measurements.</p></div><button type="button" data-open-view="stations">Browse stations <span aria-hidden="true">→</span></button></article>
+      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--blue" aria-hidden="true">⌁</span><div><h4>Explore the lake map</h4><p>Locate mapped stations, review the selected parameter and inspect documented incident areas.</p></div><button type="button" data-open-view="map">Open lake map <span aria-hidden="true">→</span></button></article>
+      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--violet" aria-hidden="true">▥</span><div><h4>Compare and interpret</h4><p>Compare matched reporting periods, review parameter interpretations and inspect historical trends.</p></div><button type="button" data-open-view="analytics">Open analytics <span aria-hidden="true">→</span></button></article>
+      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--gold" aria-hidden="true">▣</span><div><h4>Create a PDF report</h4><p>Choose a station or reporting scope, preview the evidence and generate a source-labeled report.</p></div><button type="button" data-open-view="reports">Open report studio <span aria-hidden="true">→</span></button></article>
+    </div>
+  </section>
+
+  <div class="overview-bottom-grid">
+    <article class="panel overview-coverage-card"><div class="panel-heading"><div><p class="eyebrow">DATA COVERAGE</p><h3>What is included?</h3></div><span class="tag tag--teal">Source-documented</span></div><ul class="overview-check-list"><li><strong>Six parameters</strong><span>DO, BOD, pH, nitrate, phosphate and TSS.</span></li><li><strong>Monthly observations</strong><span>Imported reporting periods from October–December 2023 and June 2026.</span></li><li><strong>Longer historical context</strong><span>Separate annual reference series are available in Analytics.</span></li></ul><button class="button" data-open-view="explorer" type="button">Open Data Explorer</button></article>
+    <aside class="panel overview-help-card"><span class="overview-help-icon" aria-hidden="true">▤</span><h3>New to LakeWatch Laguna?</h3><p>Use the floating User Manual for module-by-module instructions. It stays open while you continue navigating the application.</p><button class="button button--primary" type="button" data-manual-open="overview">Open User Manual</button></aside>
+  </div>
 </section>
 
 <section aria-labelledby="map-title" class="view" hidden="" id="view-map">
@@ -159,8 +194,11 @@
 <label class="toggle-line"><input checked="" id="show-boundary" type="checkbox"/> <span>Show lake boundary</span></label>
 <label class="toggle-line"><input checked="" id="show-stations" type="checkbox"/> <span>Show station markers</span></label>
 <label class="toggle-line"><input checked id="show-incidents" type="checkbox"/> <span>Show documented incident locations</span></label>
-<label class="form-label" for="map-station-locator">Go to monitoring station</label>
+<label class="form-label" for="map-station-search">Find a station</label>
+<input class="search-input map-station-search" id="map-station-search" type="search" autocomplete="off" placeholder="Search station ID or lake bay" aria-controls="map-station-locator">
+<label class="form-label" for="map-station-locator">Choose a matching station</label>
 <select aria-label="Choose a station to locate on the map" class="control-select" id="map-station-locator"><option value="">Select a station…</option></select>
+<p class="map-search-hint" id="map-station-search-hint" aria-live="polite">Type to narrow the station list, then select a result.</p>
 <div class="mini-param-guide"><strong>Parameter color key</strong><div aria-label="Colors identify parameter types" class="parameter-legend" id="map-parameter-key"></div><small>Ring color identifies the selected parameter.</small></div>
 <div aria-label="Station coordinate confidence" class="map-marker-legend"><span><i class="legend-dot legend-dot--published"></i> Published research coordinates</span><span><i class="legend-dot legend-dot--approx"></i> Approximate area only</span><span><i class="legend-dot legend-dot--archived"></i> Archived / no recent reading</span></div>
 <p class="note" id="boundary-note" role="status">Shoreline layer not loaded yet.</p>
@@ -440,6 +478,12 @@
   </section>
   <div class="manager-session" id="manager-session" hidden><span id="manager-session-label"></span><button class="button" type="button" id="manager-logout">Sign out</button></div>
   <div class="manager-layout" id="manager-layout" hidden>
+    <div class="manager-workflow" id="manager-workflow" aria-label="Data publishing workflow">
+      <div class="manager-workflow-step" data-manager-step="1" data-state="current"><span>1</span><div><strong>Choose method</strong><small>Select how the records will be added.</small></div></div>
+      <div class="manager-workflow-step" data-manager-step="2" data-state="upcoming"><span>2</span><div><strong>Document source</strong><small>Identify the original publication or data URL.</small></div></div>
+      <div class="manager-workflow-step" data-manager-step="3" data-state="upcoming"><span>3</span><div><strong>Preview &amp; validate</strong><small>Review new, corrected and invalid rows.</small></div></div>
+      <div class="manager-workflow-step" data-manager-step="4" data-state="upcoming"><span>4</span><div><strong>Publish</strong><small>Save approved observations to the shared database.</small></div></div>
+    </div>
     <aside class="panel manager-side">
       <h3>How to add data</h3>
       <div class="manager-methods" role="group" aria-label="How to add data">

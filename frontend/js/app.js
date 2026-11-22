@@ -9,6 +9,9 @@
   const $ = id => document.getElementById(id);
   const views = Array.from(document.querySelectorAll(".view"));
   const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
+  const navGroupByView = {map:"explore",stations:"explore",explorer:"explore",context:"explore",analytics:"analysis",reports:"analysis",manage:"admin",about:"help"};
+  const moduleLabels = {overview:"Environmental Overview",map:"Interactive Lake Map",stations:"Monitoring Stations",analytics:"Water Quality Analytics",explorer:"Data Explorer",context:"Lake Context",reports:"Water Quality Reports",manage:"Manage Data",about:"About & Sources"};
+  const groupLabels = {overview:"Dashboard",explore:"Explore",analysis:"Analysis & Reports",admin:"Administration",help:"Help & Information"};
   const palette = window.LakeWatchPalette;
 
   let dataset = null;
@@ -44,6 +47,64 @@
     const unit = parameter.unit === "pH units" ? "" : ` ${parameter.unit}`;
     return `${label}${unit}`;
   }
+  function hasReportedValues(sample) {
+    return Boolean(sample && Object.values(sample.values || {}).some(value => value !== null && value !== undefined && value !== ""));
+  }
+
+  function populateMapStationLocator(filter = "") {
+    if (!dataset) return;
+    const select = $("map-station-locator");
+    const query = String(filter || "").trim().toLowerCase();
+    const current = select.value;
+    const matches = dataset.stations.filter(station => `${station.id} ${station.name} ${station.zone}`.toLowerCase().includes(query));
+    select.innerHTML = '<option value="">Select a station…</option>' + matches.map(station =>
+      `<option value="${safe(station.id)}" ${station.position ? "" : "disabled"}>Stn. ${safe(station.id)} — ${safe(station.zone)} ${station.position ? "" : "(unlocated)"}</option>`).join("");
+    if (matches.some(station => station.id === current)) select.value = current;
+    const hint = $("map-station-search-hint");
+    if (hint) hint.textContent = query
+      ? `${matches.length} matching station record${matches.length === 1 ? "" : "s"}. Unlocated entries cannot be opened on the map.`
+      : "Type to narrow the station list, then select a result.";
+  }
+
+  function updateOverviewSummary() {
+    if (!dataset) return;
+    const active = dataset.stations.filter(station => station.appStatus === "active").length;
+    const archived = dataset.stations.filter(station => station.appStatus === "archived").length;
+    const latestPeriod = dataset.stations.flatMap(station => (station.samples || []).filter(hasReportedValues).map(sample => sample.period)).sort().at(-1) || dataset.periods.at(-1);
+    const latestStationCount = dataset.stations.filter(station => (station.samples || []).some(sample => sample.period === latestPeriod && hasReportedValues(sample))).length;
+    const readingCount = dataset.stations.reduce((total, station) => total + (station.samples || []).reduce((count, sample) => count + Object.values(sample.values || {}).filter(value => value !== null && value !== undefined && value !== "").length, 0), 0);
+    $("overview-active-count").textContent = String(active);
+    $("overview-active-caption").textContent = `Of ${dataset.stations.length} station records in the directory.`;
+    $("overview-archived-count").textContent = String(archived);
+    $("overview-latest-period").textContent = monthLabel(latestPeriod);
+    $("overview-latest-coverage").textContent = `${latestStationCount} of ${dataset.stations.length} listed station records have readings.`;
+    $("overview-reading-count").textContent = String(readingCount);
+    $("overview-source-period").textContent = monthLabel(latestPeriod);
+    const connected = document.getElementById("api-status-bar")?.dataset.state === "online";
+    $("overview-connection-label").textContent = connected ? "Shared database connected" : "Offline snapshot in use";
+    $("overview-connection-label").dataset.state = connected ? "online" : "offline";
+  }
+
+  function updateModuleContext(name) {
+    const groupKey = navGroupByView[name] || "";
+    const category = groupLabels[groupKey || "overview"];
+    const current = moduleLabels[name] || name;
+    const categoryNode = $("breadcrumb-category");
+    const currentNode = $("breadcrumb-current");
+    if (categoryNode) categoryNode.textContent = category;
+    if (currentNode) currentNode.textContent = current;
+    const guide = $("view-help-button");
+    if (guide) guide.dataset.manualOpen = name;
+    document.querySelectorAll(".nav-group").forEach(group => {
+      const active = group.dataset.navGroup === groupKey;
+      group.classList.toggle("has-active", active);
+      const currentLabel = group.querySelector("[data-nav-current]");
+      if (currentLabel) currentLabel.textContent = active ? current : group.dataset.navCount;
+      group.open = active;
+    });
+    document.title = `${current} | LakeWatch Laguna`;
+  }
+
   function renderValueCards(station, period) {
     const sample = sampleAt(station, period);
     if (!sample) return '<p class="hint">No readings for this month.</p>';
@@ -271,6 +332,7 @@
     if (!chosen) return;
     currentView = name;
     window.LakeWatchManual?.followView(name);
+    updateModuleContext(name);
     // Keep the chosen module visible after a safe page reload.
     try { window.sessionStorage.setItem('lakewatch-current-view', name); } catch (_) {}
     views.forEach(view => { view.hidden = view !== chosen; });
@@ -328,6 +390,7 @@
     if (nav) {
       showView(nav.dataset.view || nav.dataset.openView);
       if(nav.dataset.scrollTarget) requestAnimationFrame(()=>document.getElementById(nav.dataset.scrollTarget)?.scrollIntoView({block:"start",behavior:"smooth"}));
+      else if (nav.matches("[data-view], [data-open-view]")) window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
     }
     const quick=e.target.closest("[data-parameter-quick]");
     if(quick && dataset){
@@ -364,6 +427,7 @@
   });
 
   $("station-search").addEventListener("input", renderDirectory);
+  $("map-station-search")?.addEventListener("input", e => populateMapStationLocator(e.target.value));
   $("map-station-locator").addEventListener("change", e => {
     const id=e.target.value;
     if(!id)return;
@@ -411,13 +475,10 @@
       if (!Array.isArray(dataset.stations) || !dataset.stations.length) throw new Error("No station records found");
       const activeCount=dataset.stations.filter(s=>s.appStatus==="active").length;
       const archivedCount=dataset.stations.filter(s=>s.appStatus==="archived").length;
-      $("overview-station-count").textContent=`${activeCount} / ${archivedCount}`;
-      $("overview-status-caption").textContent=`Recent readings through ${monthLabel(dataset.metadata.statusAsOf)}; does not confirm official operation.`;
       $("active-stations-count").textContent=String(activeCount);
       $("archived-stations-count").textContent=String(archivedCount);
-      $("map-station-locator").innerHTML='<option value="">Select a station…</option>'+dataset.stations.map(s=>
-        `<option value="${safe(s.id)}" ${s.position?'':'disabled'}>Stn. ${safe(s.id)} — ${safe(s.zone)} ${s.position?'':'(unlocated)'}</option>`).join("");
-      $("overview-reading-count").textContent=dataset.stations.reduce((total,station)=>total+station.samples.reduce((n,sample)=>n+Object.values(sample.values).filter(x=>x!==null && x!=="").length,0),0);
+      populateMapStationLocator($("map-station-search")?.value || "");
+      updateOverviewSummary();
       // Generate selectors from the dataset so newer reporting periods work everywhere.
       for (const id of ["station-period", "map-period"]) {
         const sel=$(id);
@@ -459,5 +520,9 @@
   // in place of a module before the administrator session is verified.
   const wantsManageRestore=initialView==='manage' && Boolean(window.LakeWatchAPI?.token());
   showView(initialView==='manage'?'overview':initialView);
+  document.querySelectorAll(".nav-group").forEach(group => group.addEventListener("toggle", () => {
+    if (!group.open) return;
+    document.querySelectorAll(".nav-group").forEach(other => { if (other !== group) other.open = false; });
+  }));
   start();
 })();
