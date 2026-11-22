@@ -82,6 +82,21 @@ window.LakeWatchData = (() => {
     }
     const say=(message, level='info')=>{ $('manager-message').textContent=message;$('manager-message').dataset.level=level;};
     const authMessage=(message)=>{ $('manager-auth-message').textContent=message; };
+    const authDialog = $('manager-auth-dialog');
+    const headerAdmin = $('global-admin-login');
+    function openLogin(){
+      if (loggedIn) return false;
+      if (!authDialog.open) {
+        authMessage('');
+        authDialog.showModal();
+        requestAnimationFrame(() => $('manager-login-email').focus());
+      }
+      return true;
+    }
+    function closeLogin(){
+      if (authDialog.open) authDialog.close();
+      $('manager-login-password').value = '';
+    }
     function paramId(value){const v=norm(value), map={dissolvedoxygen:'do',biochemicaloxygendemand:'bod',phlevel:'ph',nitraten:'nitrate',inorganicphosphate:'phosphate',totalsuspendedsolids:'tss'};
       return params.find(p=>[norm(p.id),norm(p.short),norm(p.name)].includes(v))?.id||map[v]||'';}
     function stationId(value){const s=String(value??'').toUpperCase().trim().replace(/^(STN\.?|STATION)\s*/,'').trim();return stationIds.has(s)?s:'';}
@@ -177,6 +192,15 @@ window.LakeWatchData = (() => {
       loggedIn=ok;sessionEmail=email;
       $('manager-login-panel').hidden=ok;
       $('manager-layout').hidden=!ok;
+      if(ok)closeLogin();
+      headerAdmin.disabled=false;
+      $('global-admin-label').textContent=ok?'Admin workspace':'Admin sign in';
+      headerAdmin.setAttribute('aria-label',ok?'Open administrator workspace':'Open administrator sign-in');
+      headerAdmin.classList.toggle('is-authenticated',ok);
+      document.querySelectorAll('[data-admin-target]').forEach(button=>{
+        button.textContent=ok?'Administrator signed in · Add record below':'Open administrator sign-in';
+      });
+      window.dispatchEvent(new CustomEvent('lakewatch-auth-changed',{detail:{authenticated:ok,email}}));
       $('manager-session').hidden=!ok;
       $('manager-local-count').textContent=ok?'Shared database connected':'Admin sign-in required';
       $('manager-storage-info').textContent='Approved observations are stored in the Render PostgreSQL database and shared with all visitors.';
@@ -214,11 +238,26 @@ window.LakeWatchData = (() => {
       $('manager-parameter').innerHTML=params.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${esc(p.unit)})</option>`).join('');
       $('manager-period').value=dataset.periods.at(-1);
       setAuthorized(false);
+      $('manager-auth-close').addEventListener('click',closeLogin);
+      authDialog.addEventListener('click',event=>{
+        // Click on the backdrop (outside the dialog card) to dismiss.
+        if(event.target===authDialog)closeLogin();
+      });
+      authDialog.addEventListener('close',()=>{$('manager-login-password').value='';authMessage('');});
       $('manager-login-form').addEventListener('submit',async event=>{
-        event.preventDefault();const email=$('manager-login-email').value.trim(),pass=$('manager-login-password').value;
+        event.preventDefault();
+        const email=$('manager-login-email').value.trim(),pass=$('manager-login-password').value;
+        const submit=$('manager-login-submit');
+        submit.disabled=true;
         authMessage('Checking credentials…');
-        try{const result=await api.login(email,pass);api.saveToken(result.access_token);$('manager-login-password').value='';setAuthorized(true,result.email);authMessage('');}
-        catch(e){authMessage(e.message);}
+        try{
+          const result=await api.login(email,pass);
+          api.saveToken(result.access_token);
+          $('manager-login-password').value='';
+          setAuthorized(true,result.email);
+          authMessage('');
+        } catch(e){authMessage(e.message);}
+        finally {submit.disabled=false;}
       });
       $('manager-logout').addEventListener('click',()=>{api.saveToken('');setAuthorized(false);authMessage('Signed out.');});
       if(api.token()){
@@ -252,7 +291,7 @@ window.LakeWatchData = (() => {
       $('manager-allow-replace').addEventListener('change',renderPreview);
       renderPreview();
     }
-    return {initialize};
+    return {initialize,openLogin,isAuthenticated:()=>loggedIn};
   }
   return {create,csvParse,decodeJSON,validValue,validPeriod};
 })();

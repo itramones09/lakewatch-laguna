@@ -24,6 +24,9 @@ window.LakeWatchMap = (() => {
     let map=null;
     let boundaryLayer=null;
     let stationLayer=null;
+    let incidentLayer=null;
+    let incidentReports=[];
+    let incidentsVisible=true;
     const markers=new Map();
     let dataset=null;
     let currentStation='I', currentPeriod='2026-06', currentParameter='do';
@@ -137,6 +140,24 @@ window.LakeWatchMap = (() => {
           'Shoreline overlay unavailable; use the OpenStreetMap base map.');
       }finally{clearTimeout(timer);}
     }
+    function redrawIncidents(){
+      if(!map||typeof L==='undefined')return;
+      if(incidentLayer){map.removeLayer(incidentLayer);incidentLayer=null;}
+      incidentLayer=L.layerGroup();
+      for(const r of incidentReports){
+        const station=dataset?.stations.find(s=>s.id===r.stationId);
+        if(!station?.position)continue;
+        const marker=L.circleMarker([station.position.lat,station.position.lon],{
+          radius:9,color:'#c25822',weight:3,fillColor:'#ffbc67',fillOpacity:.9,bubblingMouseEvents:false
+        });
+        marker.bindPopup(`<div class="station-popup"><strong>${esc(r.title)}</strong><p>${esc(r.eventDate)} · ${esc(r.incidentType.replaceAll('_',' '))}</p><p>${esc(r.description)}</p><p>Location shown at Station ${esc(r.stationId)} as a geographic reference only; the event site is not surveyed.</p><small>Administrator-documented report; not independently confirmed by LLDA.</small></div>`);
+        marker.bindTooltip(`Incident report near station ${r.stationId}: ${r.title}`);
+        marker.addTo(incidentLayer);
+      }
+      if(incidentsVisible)incidentLayer.addTo(map);
+    }
+    function setIncidentReports(rows){incidentReports=Array.isArray(rows)?rows:[];redrawIncidents();}
+    function showIncidents(v){incidentsVisible=v;if(!map||!incidentLayer)return;v?incidentLayer.addTo(map):map.removeLayer(incidentLayer);}
     function initialize(data,stationId,period,param){
       dataset=data;currentStation=stationId;currentPeriod=period;currentParameter=param;
       if(map)return;
@@ -149,6 +170,7 @@ window.LakeWatchMap = (() => {
       L.control.scale({imperial:false}).addTo(map);
       map.on('click',({latlng})=>onCoordinate(`${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`));
       addStations();
+      redrawIncidents();
       const verified=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy==='published-research').length;
       const approx=dataset.stations.filter(s=>s.position&&s.coordinateAccuracy!=='published-research').length;
       onStatus(`${markers.size} station tags: ${verified} published-coordinate and ${approx} approximate-area pins; ${dataset.stations.length-markers.size} unlocated`);
@@ -170,7 +192,7 @@ window.LakeWatchMap = (() => {
     function showStations(v){showPins=v;if(!map||!stationLayer)return;v?stationLayer.addTo(map):map.removeLayer(stationLayer);}
     function resetView(){map?.fitBounds(lakeBounds,{padding:[16,16]});}
     function invalidateSize(){if(!map)return;map.invalidateSize();if(!sizeChecked){resetView();sizeChecked=true;}}
-    return {initialize,selectStation,setSelection,showBoundary,showStations,resetView,invalidateSize};
+    return {initialize,selectStation,setSelection,showBoundary,showStations,showIncidents,setIncidentReports,resetView,invalidateSize};
   }
   return {create};
 })();

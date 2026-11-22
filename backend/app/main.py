@@ -447,3 +447,286 @@ def export_overrides(admin: Admin = Depends(current_admin), db: Session = Depend
                           'sourceReference': r.source_reference, 'title': r.title,
                           'method': r.method, 'editor': r.updated_by, 'updatedAt': r.updated_at.isoformat()}
                          for r in rows]}
+
+
+# --- Phase 10: independently sourced environmental context and incident registry ---
+# These records are separate from laboratory observations and never alter LLDA samples.
+class EnvironmentalIncident(BaseModelSQL):
+    __tablename__ = 'environmental_incidents'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_date: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    incident_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    station_id: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    source_title: Mapped[str] = mapped_column(String(200), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False, default='')
+    added_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class ContextObservation(BaseModelSQL):
+    __tablename__ = 'environmental_context_observations'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    observation_date: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    location: Mapped[str] = mapped_column(String(120), nullable=False)
+    value: Mapped[float] = mapped_column(nullable=False)
+    unit: Mapped[str] = mapped_column(String(20), nullable=False)
+    source_title: Mapped[str] = mapped_column(String(200), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False, default='')
+    added_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+def validate_public_link(value: str) -> str:
+    value = value.strip()
+    if not value:
+        return ''
+    parts = urlparse(value)
+    if parts.scheme not in ('http', 'https') or not parts.hostname or parts.username or parts.password:
+        raise ValueError('Supply a public http(s) document URL without credentials')
+    return value
+
+
+class IncidentIn(BaseModel):
+    eventDate: str
+    incidentType: str
+    stationId: str | None = None
+    title: str = Field(min_length=5, max_length=160)
+    description: str = Field(min_length=15, max_length=3000)
+    sourceTitle: str = Field(min_length=5, max_length=200)
+    sourceUrl: str = Field('', max_length=2000)
+
+    @model_validator(mode='after')
+    def validate_input(self):
+        try:
+            when = datetime.strptime(self.eventDate, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError('Event date must be a valid YYYY-MM-DD date')
+        if when > datetime.now(timezone.utc).date() or when.year < 1970:
+            raise ValueError('Future or out-of-range incident date')
+        if self.incidentType not in ('fish_kill', 'algal_bloom', 'spill', 'sediment', 'other'):
+            raise ValueError('Unrecognized incident category')
+        if self.stationId and self.stationId not in STATIONS:
+            raise ValueError('Unknown monitoring area')
+        self.sourceUrl = validate_public_link(self.sourceUrl)
+        self.title, self.description, self.sourceTitle = (v.strip() for v in (self.title,self.description,self.sourceTitle))
+        return self
+
+
+class ContextIn(BaseModel):
+    observationDate: str
+    kind: str
+    location: str = Field(min_length=2, max_length=120)
+    value: float
+    sourceTitle: str = Field(min_length=5, max_length=200)
+    sourceUrl: str = Field('', max_length=2000)
+
+    @model_validator(mode='after')
+    def validate_input(self):
+        from math import isfinite
+        try:
+            when = datetime.strptime(self.observationDate, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError('Use a valid observation date')
+        if when > datetime.now(timezone.utc).date() or when.year < 1970:
+            raise ValueError('Future or out-of-range observation date')
+        if self.kind not in ('rainfall', 'air_temperature', 'lake_level', 'tributary_flow', 'water_temperature'):
+            raise ValueError('Unknown context data type')
+        if not isfinite(self.value) or abs(self.value)>1000000:
+            raise ValueError('Non-finite or unreasonable magnitude')
+        if self.kind in ('rainfall','tributary_flow') and self.value < 0:
+            raise ValueError('Negative values are not allowed for this type')
+        self.sourceUrl = validate_public_link(self.sourceUrl)
+        self.location,self.sourceTitle=self.location.strip(),self.sourceTitle.strip()
+        return self
+
+
+CONTEXT_UNITS = {'rainfall':'mm', 'air_temperature':'°C', 'lake_level':'m',
+                 'tributary_flow':'m³/s', 'water_temperature':'°C'}
+
+
+@app.get('/api/incidents')
+def list_incidents(db: Session = Depends(db_session)):
+    rows = db.scalars(select(EnvironmentalIncident).order_by(EnvironmentalIncident.event_date.desc(), EnvironmentalIncident.id.desc()).limit(250)).all()
+    return {'records': [{'id':r.id, 'eventDate':r.event_date,'incidentType':r.incident_type,
+        'stationId':r.station_id,'title':r.title,'description':r.description,
+        'sourceTitle':r.source_title,'sourceUrl':r.source_url,'addedAt':r.added_at.isoformat(),
+        'verification':'Administrator-documented report; not an independent LLDA confirmation'} for r in rows]}
+
+
+@app.post('/api/incidents', status_code=201)
+def add_incident(item: IncidentIn, admin: Admin = Depends(current_admin), db: Session = Depends(db_session)):
+    row = EnvironmentalIncident(event_date=item.eventDate,incident_type=item.incidentType,
+        station_id=item.stationId or None,title=item.title,description=item.description,
+        source_title=item.sourceTitle,source_url=item.sourceUrl,added_by=admin.email)
+    db.add(row)
+    db.commit()
+    return {'id':row.id, 'saved':True, 'verification':'Administrator documented; not independently confirmed'}
+
+
+@app.get('/api/environmental-context')
+def list_context(db: Session = Depends(db_session)):
+    rows=db.scalars(select(ContextObservation).order_by(ContextObservation.observation_date.desc(),ContextObservation.id.desc()).limit(500)).all()
+    return {'records':[{'id':r.id,'observationDate':r.observation_date,'kind':r.kind,
+        'location':r.location,'value':r.value,'unit':r.unit,'sourceTitle':r.source_title,
+        'sourceUrl':r.source_url,'addedAt':r.added_at.isoformat()} for r in rows]}
+
+
+@app.post('/api/environmental-context', status_code=201)
+def add_context(item: ContextIn, admin: Admin = Depends(current_admin), db: Session = Depends(db_session)):
+    row=ContextObservation(observation_date=item.observationDate,kind=item.kind,
+        location=item.location,value=item.value,unit=CONTEXT_UNITS[item.kind],
+        source_title=item.sourceTitle,source_url=item.sourceUrl,added_by=admin.email)
+    db.add(row)
+    db.commit()
+    return {'id':row.id,'saved':True}
+
+# Render-native PDF export. Public read-only report; no client-side PDF dependency required.
+from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
+from fastapi import Query
+from fastapi.responses import StreamingResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import mm
+
+
+@app.get('/api/reports/pdf')
+def pdf_report(
+        stationId: str = Query('I', min_length=1, max_length=12),
+        period: str = Query('2026-06', min_length=7, max_length=7),
+        parameter: str = Query('all', max_length=40),
+        includeIncidents: bool = True,
+        includeContext: bool = True,
+        db: Session = Depends(db_session)):
+    """Source-labeled, server-generated report of published historical observations."""
+    if stationId != 'all' and stationId not in STATIONS:
+        raise HTTPException(400, 'Unknown station')
+    if not re.fullmatch(r'\d{4}-(0[1-9]|1[0-2])', period):
+        raise HTTPException(400, 'Use a YYYY-MM reporting month')
+    if parameter != 'all' and parameter not in PARAMETERS:
+        raise HTTPException(400, 'Unknown parameter')
+    data = merged_dataset(db)
+    if period not in data['periods']:
+        raise HTTPException(400, 'No imported records for this month')
+    stations = data['stations'] if stationId == 'all' else [s for s in data['stations'] if s['id'] == stationId]
+    params = [p for p in data['parameters'] if parameter == 'all' or p['id'] == parameter]
+
+    buf = BytesIO()
+    PAGE_W,PAGE_H=A4
+    theme_navy=colors.HexColor('#0B2C40')
+    theme_teal=colors.HexColor('#0B9489')
+    pale=colors.HexColor('#EAF4F4')
+    gray=colors.HexColor('#526B79')
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='LakeSub',parent=styles['Normal'],fontName='Helvetica',fontSize=9,leading=14,textColor=gray))
+    styles.add(ParagraphStyle(name='LakeHead',parent=styles['Heading2'],fontName='Helvetica-Bold',fontSize=13,leading=19,spaceBefore=12,spaceAfter=9,textColor=theme_navy))
+    styles.add(ParagraphStyle(name='LakeCell',parent=styles['Normal'],fontName='Helvetica',fontSize=8.1,leading=10.5,textColor=theme_navy))
+    styles.add(ParagraphStyle(name='LakeSmall',parent=styles['Normal'],fontName='Helvetica',fontSize=7.4,leading=11,textColor=gray))
+    fmt=lambda v: xml_escape(str(v if v is not None else ''))
+
+    def pages(canvas, doc):
+        canvas.saveState()
+        canvas.setFillColor(theme_navy)
+        canvas.rect(0,PAGE_H-34*mm,PAGE_W,34*mm,stroke=0,fill=1)
+        canvas.setFillColor(theme_teal)
+        canvas.rect(0,PAGE_H-34*mm,PAGE_W,2*mm,stroke=0,fill=1)
+        logo=Path(__file__).parent/'assets'/'lakewatch-laguna-logo.png'
+        if logo.exists():
+            try: canvas.drawImage(str(logo),16*mm,PAGE_H-28*mm,width=19*mm,height=19*mm,mask='auto')
+            except Exception: pass
+        canvas.setFillColor(colors.white)
+        canvas.setFont('Helvetica-Bold',15)
+        canvas.drawString(39*mm,PAGE_H-19*mm,'LAKEWATCH LAGUNA')
+        canvas.setFont('Helvetica',8)
+        canvas.drawString(39*mm,PAGE_H-26*mm,'Environmental Intelligence  /  Water Quality Report')
+        canvas.setStrokeColor(colors.HexColor('#CEDDE0'))
+        canvas.line(16*mm,17*mm,PAGE_W-16*mm,17*mm)
+        canvas.setFillColor(gray)
+        canvas.setFont('Helvetica',7)
+        canvas.drawString(16*mm,12*mm,'MIT  |  LSPU San Pablo City Campus  |  Historical data, not live sensors')
+        canvas.drawRightString(PAGE_W-16*mm,12*mm,f'Page {doc.page}')
+        canvas.restoreState()
+
+    doc=SimpleDocTemplate(buf,pagesize=A4,rightMargin=16*mm,leftMargin=16*mm,
+        topMargin=40*mm,bottomMargin=22*mm,title='LakeWatch Laguna Water Quality Report',author='LakeWatch Laguna')
+    story=[Paragraph('Monitoring Summary',styles['LakeHead'])]
+    story.append(Paragraph(f'<b>Sampling month:</b> {fmt(period)}  |  <b>Monitoring areas:</b> {len(stations)}  |  <b>Parameters:</b> {len(params)}',styles['LakeSub']))
+    story.append(Paragraph('These are dated laboratory observations. The system does not provide live LLDA sensor readings or certify water safety.',styles['LakeSub']))
+    story.append(Spacer(1,5*mm))
+    header=[Paragraph('<b>Station / Bay</b>',styles['LakeCell']), Paragraph('<b>Parameter</b>',styles['LakeCell']), Paragraph('<b>Reported result</b>',styles['LakeCell']), Paragraph('<b>Source</b>',styles['LakeCell'])]
+    table_rows=[header]
+    totals=0
+    citations=set()
+    for station in stations:
+        sample=next((s for s in station['samples'] if s['period']==period),None)
+        for p in params:
+            raw=sample.get('values',{}).get(p['id']) if sample else None
+            if raw is not None and raw!='': totals+=1
+            value='Not reported' if raw is None or raw=='' else str(raw) + ('' if p['unit']=='pH units' else f" {p['unit']}")
+            provenance=(sample or {}).get('provenance',{}).get(p['id'])
+            if provenance:
+                source='Admin: '+(provenance.get('title') or provenance.get('sourceOrganization') or 'documented update')
+                ref=provenance.get('sourceUrl') or ' / '.join(str(provenance.get(k) or '') for k in ('sourceOrganization','sourceDate','sourceReference'))
+                if ref.strip():citations.add(ref)
+            else:
+                source='LLDA Q2 2026' if period=='2026-06' else 'LLDA Q4 2023' if period.startswith('2023-') else 'Published historical record'
+            station_name=station['name']+' / '+station['zone']
+            table_rows.append([Paragraph(fmt(station_name),styles['LakeCell']),
+                Paragraph(fmt(p['name']),styles['LakeCell']),Paragraph(fmt(value),styles['LakeCell']),Paragraph(fmt(source),styles['LakeCell'])])
+    story.append(Paragraph(f'<b>Available observations:</b> {totals} of {len(stations)*len(params)} selected station-parameter combinations',styles['LakeSub']))
+    story.append(Spacer(1,4*mm))
+    table=Table(table_rows,colWidths=[51*mm,45*mm,35*mm,46*mm],repeatRows=1,hAlign='LEFT')
+    table.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),pale),('VALIGN',(0,0),(-1,-1),'TOP'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#F7FAFA')]),
+        ('LINEBELOW',(0,0),(-1,-1),0.3,colors.HexColor('#D8E6E8')),
+        ('LEFTPADDING',(0,0),(-1,-1),6),('RIGHTPADDING',(0,0),(-1,-1),5),
+        ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)
+    ]))
+    story.append(table)
+
+    story.append(Paragraph('Interpretation and Limitations',styles['LakeHead']))
+    for note in [
+        'DO relates to oxygen availability; BOD reflects biodegradable oxygen demand; pH describes acidity or alkalinity.',
+        'Nitrate and phosphate are nutrients, but their chemical reporting bases must match any comparison standard.',
+        'TSS describes suspended particles. An individual result cannot establish the condition of the entire lake.',
+        'Results below a laboratory detection/reporting limit (for example &lt;0.1) are not exact numeric values.',
+        'Station marker coordinates may be approximate and must not be interpreted as surveyed sampling locations.',
+    ]: story.append(Paragraph('&#8226; '+note,styles['LakeSub']))
+    if includeIncidents:
+        story.append(Paragraph('Environmental Incident Registry',styles['LakeHead']))
+        items=db.scalars(select(EnvironmentalIncident).order_by(EnvironmentalIncident.event_date.desc()).limit(35)).all()
+        if not items: story.append(Paragraph('No administrator-documented incident reports are currently published in this registry. This does not mean that no incidents occurred.',styles['LakeSub']))
+        for incident in items:
+            text_content=f'{incident.event_date} | {incident.incident_type.replace("_"," ")} | {incident.title} | {incident.source_title}'
+            story.append(Paragraph(fmt(text_content),styles['LakeSmall']))
+            if incident.source_url:citations.add(incident.source_url)
+    if includeContext:
+        story.append(Paragraph('Environmental Context',styles['LakeHead']))
+        items=db.scalars(select(ContextObservation).order_by(ContextObservation.observation_date.desc()).limit(35)).all()
+        if not items:story.append(Paragraph('No independently sourced contextual measurements are currently published in the curated context dataset.',styles['LakeSub']))
+        for r in items:
+            value=f'{r.observation_date} | {r.kind.replace("_"," ")} | {r.location} | {r.value:g} {r.unit} | {r.source_title}'
+            story.append(Paragraph(fmt(value),styles['LakeSmall']))
+            if r.source_url:citations.add(r.source_url)
+
+    story.append(Paragraph('Data Provenance',styles['LakeHead']))
+    for title, url in [('LLDA Q4 2023',data['metadata'].get('source2023Url','')),
+                       ('LLDA Q2 2026',data['metadata'].get('source2026Url',''))]:
+        if url:story.append(Paragraph(f'<b>{fmt(title)}:</b> {fmt(url)}',styles['LakeSmall']))
+    for source in sorted(citations):story.append(Paragraph(fmt(source),styles['LakeSmall']))
+    story.append(Spacer(1,4*mm))
+    story.append(Paragraph(f'<i>Report generated UTC: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}. Original data and citations should be reviewed before formal environmental or regulatory decisions.</i>',styles['LakeSmall']))
+    doc.build(story,onFirstPage=pages,onLaterPages=pages)
+    buf.seek(0)
+    filename=f'LakeWatch_Laguna_{period}_{stationId}_Report.pdf'
+    return StreamingResponse(buf,media_type='application/pdf',headers={
+        'Content-Disposition':f'attachment; filename="{filename}"',
+        'Cache-Control':'no-store'
+    })

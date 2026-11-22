@@ -33,6 +33,10 @@ window.LakeWatchAPI = (() => {
     me: () => request('/api/auth/me',{auth:true}),
     saveBatch: (readings,allowReplace) => request('/api/observations/batch',{method:'POST',auth:true,body:{readings,allowReplace}}),
     audit: () => request('/api/audit',{auth:true}),
-    export: () => request('/api/observations/export',{auth:true})
+    export: () => request('/api/observations/export',{auth:true}),
+    incidents: () => request('/api/incidents'),
+    addIncident: body => request('/api/incidents',{method:'POST',auth:true,body}),
+    contextRecords: () => request('/api/environmental-context'),
+    addContext: body => request('/api/environmental-context',{method:'POST',auth:true,body})
   };
 })();

@@ -34,6 +34,8 @@
 <script defer="" src="js/api-client.js"></script>
 <script defer="" src="js/live-sync.js"></script>
 <script defer="" src="js/data-manager.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script defer src="js/intelligence-studio.js"></script>
 <script defer="" src="js/app.js"></script>
 </head>
 <body><a class="skip-link" href="#app-content">Skip to main content</a>
@@ -46,6 +48,10 @@
 <p class="brand-subtitle">Water Quality Monitoring &amp; Visualization</p>
 </div>
 </div>
+<div class="header-actions">
+<button type="button" id="global-admin-login" class="global-admin-button" disabled aria-label="Administrator sign in" data-admin-login>
+  <span class="global-admin-icon" aria-hidden="true">♙</span><span id="global-admin-label">Admin sign in</span>
+</button>
 <details class="appearance-settings" id="appearance-settings">
 <summary aria-label="Open appearance settings">
 <span aria-hidden="true">⚙</span> Appearance <span class="appearance-current" id="appearance-current">System</span>
@@ -61,6 +67,7 @@
 <p class="appearance-status" id="appearance-status" role="status">Theme is ready.</p>
 </div>
 </details>
+</div>
 </header>
 <div class="api-status-bar" id="api-status-bar" role="status" aria-live="polite">Connecting to shared readings… <button class="api-refresh-button" id="api-refresh-button" type="button" hidden>Reload latest data</button></div>
 <nav aria-label="Main modules" class="site-nav">
@@ -69,6 +76,8 @@
 <button class="nav-btn" data-view="stations" type="button">Monitoring Stations</button>
 <button class="nav-btn" data-view="analytics" type="button">Analytics</button>
 <button class="nav-btn" data-view="explorer" type="button">Data Explorer</button>
+<button class="nav-btn" data-view="context" type="button">Lake Context</button>
+<button class="nav-btn" data-view="reports" type="button">Reports</button>
 <button class="nav-btn" data-view="manage" type="button">Manage Data</button>
 <button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
 </nav>
@@ -93,6 +102,10 @@
 <div class="panel-heading"><div><h3 id="overview-color-heading">Water-quality parameter color key</h3><p class="hint">Select a parameter to open its charts.</p></div><span class="tag">Parameter identity · not a safety rating</span></div>
 <div aria-label="Choose a parameter to analyze" class="parameter-shortcuts" id="overview-parameter-guide" role="group"></div>
 <p class="parameter-color-disclaimer">Colors identify parameters, not water-quality ratings.</p>
+</section>
+<section class="intelligence-launchpad" aria-label="Additional analysis tools">
+  <div class="launchpad-head"><p class="eyebrow">Discover more</p><h3>From observations to insight.</h3><p class="module-caption">Understand parameters, compare stations, explore environmental context and publish evidence-backed reports.</p></div>
+  <div class="launchpad-actions"><button type="button" data-open-view="analytics"><span class="launch-icon">↗</span><strong>Compare & predict</strong><small>Analytics Studio</small></button><button type="button" data-open-view="context"><span class="launch-icon">◌</span><strong>Lake context</strong><small>Weather & environmental records</small></button><button type="button" data-open-view="reports"><span class="launch-icon">▣</span><strong>Report Studio</strong><small>Professional PDF export</small></button><button type="button" data-open-view="map" data-scroll-target="incident-title"><span class="launch-icon">⌖</span><strong>Incident watch</strong><small>Evidence-backed event registry</small></button></div>
 </section>
 <div class="overview-grid">
 <article class="panel panel--large">
@@ -143,6 +156,7 @@
 <div class="side-divider"></div>
 <label class="toggle-line"><input checked="" id="show-boundary" type="checkbox"/> <span>Show lake boundary</span></label>
 <label class="toggle-line"><input checked="" id="show-stations" type="checkbox"/> <span>Show station markers</span></label>
+<label class="toggle-line"><input checked id="show-incidents" type="checkbox"/> <span>Show documented incident locations</span></label>
 <label class="form-label" for="map-station-locator">Go to monitoring station</label>
 <select aria-label="Choose a station to locate on the map" class="control-select" id="map-station-locator"><option value="">Select a station…</option></select>
 <div class="mini-param-guide"><strong>Parameter color key</strong><div aria-label="Colors identify parameter types" class="parameter-legend" id="map-parameter-key"></div><small>Ring color identifies the selected parameter.</small></div>
@@ -166,6 +180,24 @@
 
 </aside>
 </div>
+<section class="environment-desk" aria-labelledby="incident-title">
+  <div class="panel-heading"><div><p class="eyebrow">Environmental Watch</p><h3 id="incident-title">Incident reporting</h3><p class="module-caption">Browse source-documented reports; an incident marker reflects its monitoring area, not a surveyed incident coordinate.</p></div><span class="tag">Administrator-documented reports</span></div>
+  <div class="incident-layout">
+    <div class="panel"><h4>Documented incidents</h4><div id="incident-feed" aria-live="polite" class="incident-feed"><p class="hint">Loading reports…</p></div></div>
+    <div class="panel"><h4>Add a sourced incident</h4><p class="module-caption">Sign in through Manage Data before submitting. Reports are not independently verified by LLDA.</p><button class="button" data-admin-login data-admin-target="incident-form" type="button">Open administrator sign-in</button>
+      <form id="incident-form" class="studio-form">
+        <label>Date of occurrence<input type="date" name="eventDate" required></label>
+        <label>Event category<select name="incidentType"><option value="fish_kill">Fish kill</option><option value="algal_bloom">Algal bloom</option><option value="spill">Reported spill</option><option value="sediment">Sedimentation / erosion</option><option value="other">Other environmental event</option></select></label>
+        <label>Monitoring area (if known)<select id="incident-station" name="stationId"><option value="">Not linked to a station</option></select></label>
+        <label>Incident title<input type="text" name="title" maxlength="160" minlength="5" required placeholder="Short descriptive title"></label>
+        <label>What was documented?<textarea name="description" rows="3" maxlength="3000" minlength="15" required placeholder="Factual description supported by the reference"></textarea></label>
+        <label>Original reference title<input type="text" name="sourceTitle" maxlength="200" minlength="5" required placeholder="Agency report or documented article"></label>
+        <label>Reference URL (optional)<input type="url" name="sourceUrl" placeholder="https://..."></label>
+        <button class="button button--primary" type="submit">Publish documented incident</button><p id="incident-form-status" class="studio-status" role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
 </section>
 
 <section aria-labelledby="stations-title" class="view" hidden="" id="view-stations">
@@ -217,7 +249,7 @@
 <select aria-label="Choose month for station comparison" class="control-select" id="analytics-period"><option>Loading months...</option></select></div>
 <div class="analytics-toolbar-actions">
 <button class="button" data-open-selected-station="" type="button">Station Profile</button>
-<button class="button button--primary" data-show-station-map="" type="button">Show on Map</button>
+<button class="button button--primary" data-show-station-map="" type="button">Show on Map</button><button class="button" data-open-view="reports" type="button">Export PDF</button>
 </div>
 </div>
 <div class="analytics-color-guide"><span aria-live="polite" id="analytics-parameter-badge" role="status"></span></div>
@@ -265,6 +297,37 @@
 <div class="history-legend"><span><i class="history-key history-key--lake"></i> Lake-wide annual averages · 1990–2000</span><span><i class="history-key history-key--station"></i> Station annual averages · 2009–2012</span><span><i class="history-key history-key--recent"></i> Station monthly readings · 2023 / June 2026</span></div>
 <details class="chart-data-details"><summary>View all plotted source readings and missing-year explanations</summary><div class="table-scroll"><table><thead><tr><th scope="col">Series</th><th scope="col">Year / month</th><th scope="col">Reported value</th><th scope="col">Source</th></tr></thead><tbody id="history-table-body"></tbody></table></div></details>
 <details class="source-details"><summary>Historical data sources</summary><p class="source-caption">Source: <a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC historical lake-wide averages, Table 3</a> · <a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 annual station report</a> · <a href="https://llda.gov.ph/ldb-and-its-tributaries/" rel="noopener noreferrer" target="_blank">LLDA 2023/2026 quarterly reports</a>.</p></details>
+</section>
+<section class="studio-section" aria-labelledby="comparison-studio-title">
+<div class="studio-section-head"><div><p class="eyebrow">Analysis Lab / 01</p><h3 id="comparison-studio-title">Multi-station comparison</h3><p class="module-caption">Compare the same parameter in the same sampling month. Missing or below-limit readings stay labeled.</p></div><span class="tag">Comparable observations only</span></div>
+<div class="intelligence-grid">
+  <div class="panel studio-controls">
+    <label>Parameter<select class="control-select" id="studio-comp-param"></select></label>
+    <label>Reporting month<select class="control-select" id="studio-comp-period"></select></label>
+    <div class="station-picker-heading">
+      <p class="form-label" id="studio-comp-stations-label">Select monitoring stations</p>
+      <div class="station-picker-actions" role="group" aria-label="Station selection shortcuts">
+        <button id="studio-comp-none" class="button station-picker-action" type="button">Unselect All</button>
+        <button id="studio-comp-select-readings" class="button button--primary station-picker-action" type="button">Select All with Readings</button>
+      </div>
+    </div>
+    <div id="studio-comp-stations" class="station-picker" role="group" aria-labelledby="studio-comp-stations-label"></div>
+  </div>
+  <div class="panel studio-visual"><h4>Comparison at a glance</h4><div id="studio-comp-chart" class="studio-bars" aria-live="polite"></div><div id="studio-comp-summary" class="studio-insight" role="status"></div></div>
+</div>
+</section>
+<section class="studio-section" aria-labelledby="forecast-title">
+<div class="studio-section-head"><div><p class="eyebrow">Analysis Lab / 02</p><h3 id="forecast-title">Predictive water-quality analytics</h3><p class="module-caption">Transparent linear-trend demonstration with data-adequacy checks. These estimates are not official forecasts.</p></div><span class="tag tag--teal">Explainable model</span></div>
+<div class="intelligence-grid">
+  <div class="panel studio-controls">
+    <label>Model dataset<select id="forecast-series" class="control-select"><option value="monthly">Current station monthly data</option><option value="annual">Historical lake-wide annual context (1990–2000)</option></select></label>
+    <label>Parameter<select id="forecast-parameter" class="control-select"></select></label>
+    <label id="forecast-station-wrap">Station<select id="forecast-station" class="control-select"></select></label>
+    <button id="forecast-run" type="button" class="button button--primary">Evaluate forecast</button>
+    <p class="module-caption">Requires at least 6 consecutive comparable observations; recent forecasts also require sufficiently current measurements.</p>
+  </div>
+  <div class="panel studio-visual"><h4>Model output and reliability</h4><div id="forecast-result" class="forecast-result" aria-live="polite"><p class="hint">Choose a dataset and run the model.</p></div></div>
+</div>
 </section>
 </section>
 
@@ -345,20 +408,33 @@
 </section>
 
 
+<section aria-labelledby="context-title" class="view" hidden id="view-context">
+<div class="page-intro"><div><p class="eyebrow">Environmental Intelligence</p><h2 id="context-title">Lake Context</h2><p class="module-caption">Weather context and independently cited environment records. Air temperature is not lake water temperature.</p></div><button class="button" id="context-refresh" type="button">Refresh weather context</button></div>
+<div class="context-hero"><div><span class="context-mark">◌</span><p>Monitoring beyond the water sample</p><h3>Understand the conditions around the lake.</h3></div><p>Environmental context does not establish causation or explain a particular water-quality sample by itself.</p></div>
+<div class="context-kpis"><article class="panel"><span>Historical daily precipitation</span><strong id="weather-rain">—</strong><small>Total over available days · mm</small></article><article class="panel"><span>Mean air temperature</span><strong id="weather-temp">—</strong><small>Observed-model context · °C</small></article><article class="panel"><span>Available weather days</span><strong id="weather-days">—</strong><small>Open-Meteo historical reanalysis</small></article></div>
+<div class="panel context-chart-panel"><div class="panel-heading"><div><h3>Rainfall and air temperature</h3><p class="module-caption" id="weather-dates">Historical daily values at an approximate Laguna de Bay reference point (14.38°N, 121.25°E).</p></div><span class="tag">External weather data · not LLDA</span></div><div id="context-weather-chart" class="weather-chart" role="img" aria-label="Daily weather reference chart"></div><p class="source-caption" id="weather-status" role="status">Loading Open-Meteo weather data…</p></div>
+<div class="context-lower"><div class="panel"><h3>Curated environmental datasets</h3><p class="module-caption">Verified historical readings for lake levels, tributaries, rainfall and water/air temperature can be added by an administrator.</p><div id="context-records" class="context-table-wrap" aria-live="polite">Loading records…</div></div>
+<div class="panel"><h3>Add contextual observations</h3><p class="module-caption">Sign in through Manage Data first. These records are stored separately from water-quality readings.</p><button class="button" data-admin-login data-admin-target="context-form" type="button">Open administrator sign-in</button>
+<form id="context-form" class="studio-form"><label>Observation date<input name="observationDate" type="date" required></label><label>Dataset type<select name="kind"><option value="lake_level">Lake water level · m</option><option value="tributary_flow">Tributary flow · m³/s</option><option value="rainfall">Daily rainfall · mm</option><option value="air_temperature">Air temperature · °C</option><option value="water_temperature">Measured lake water temperature · °C</option></select></label><label>Location / monitoring site<input name="location" required maxlength="120" placeholder="Reference location"></label><label>Measured value<input name="value" type="number" step="any" required></label><label>Original source title<input name="sourceTitle" type="text" minlength="5" maxlength="200" required></label><label>Source URL (optional)<input name="sourceUrl" type="url" placeholder="https://..."></label><button class="button button--primary" type="submit">Save cited context record</button><p id="context-form-status" role="status" class="studio-status"></p></form></div></div>
+<p class="source-caption">External reference: <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo Historical Weather API</a>. Gridded weather estimates represent atmospheric conditions near the lake; they are not LLDA in-lake samples. If unavailable, the dashboard shows no substituted values.</p>
+</section>
+
+<section aria-labelledby="reports-title" class="view" hidden id="view-reports">
+<div class="page-intro"><div><p class="eyebrow">Publishing Studio</p><h2 id="reports-title">Water Quality Reports</h2><p class="module-caption">Generate a professional, source-labeled PDF for academic and environmental reporting.</p></div><span class="tag tag--teal">Export-ready</span></div>
+<div class="report-designer"><div class="panel studio-controls report-controls"><h3>Build a report</h3><label>Report scope<select id="report-scope" class="control-select"><option value="station">Selected monitoring station</option><option value="all">All reporting stations</option></select></label><label>Monitoring station<select id="report-station" class="control-select"></select></label><label>Reporting month<select id="report-period" class="control-select"></select></label><label>Parameter<select id="report-parameter" class="control-select"><option value="all">All six parameters</option></select></label><label class="toggle-line"><input type="checkbox" checked id="report-incidents"> Include incident summary</label><label class="toggle-line"><input type="checkbox" checked id="report-context"> Include contextual-data summary</label><button type="button" id="report-preview-btn" class="button">Preview report</button><button type="button" id="report-pdf-btn" class="button button--primary">Download PDF report</button><p id="report-status" class="studio-status" role="status"></p><p class="module-caption">Report will include dates, data limitations and citations. Browser Print → Save as PDF is available if the PDF library cannot load.</p></div>
+<div class="report-preview-shell"><div id="report-preview" class="report-sheet" aria-live="polite"><h3>Report preview</h3><p>Select a reporting scope and preview your PDF.</p></div></div></div>
+</section>
+
 <section aria-labelledby="manage-title" class="view" hidden id="view-manage">
   <div class="page-intro">
     <div><h2 id="manage-title">Manage Data</h2><p class="module-caption">Import, review and save source-documented water-quality observations.</p></div>
     <span class="tag tag--teal" id="manager-local-count">Administrator sign-in required</span>
   </div>
-  <section class="panel manager-login-panel" id="manager-login-panel" aria-label="Administrator login">
-    <h3>Administrator sign-in</h3>
-    <p class="module-caption">Only authorized administrators can publish or correct water-quality observations. Visitors can view data without signing in.</p>
-    <form id="manager-login-form" class="manager-login-form">
-      <label>Administrator email<input class="search-input" id="manager-login-email" type="email" required autocomplete="username" placeholder="admin@example.com"></label>
-      <label>Password<input class="search-input" id="manager-login-password" type="password" required autocomplete="current-password" minlength="12"></label>
-      <button class="button button--primary" type="submit">Sign in securely</button>
-    </form>
-    <p class="manager-message" id="manager-auth-message" role="status" aria-live="polite"></p>
+  <section class="panel manager-login-prompt" id="manager-login-panel" aria-label="Administrator access">
+    <div class="manager-login-prompt-icon" aria-hidden="true">✦</div>
+    <h3>Administrator access</h3>
+    <p class="module-caption">Sign in to review, publish or correct water-quality observations. The sign-in window will open without changing your current module.</p>
+    <button class="button button--primary" type="button" data-admin-login>Open administrator sign-in</button>
   </section>
   <div class="manager-session" id="manager-session" hidden><span id="manager-session-label"></span><button class="button" type="button" id="manager-logout">Sign out</button></div>
   <div class="manager-layout" id="manager-layout" hidden>
@@ -465,13 +541,13 @@
 <p><strong>Developers:</strong> Ian Titus F. Ramones and Dycyn T. Alvaro.</p>
 <h3>Updating the Data</h3>
 <p>The Manage Data module supports Manual Entry, CSV/Excel File Import, and Import from URL. Manual and file imports can cite an Online Publication (valid URL) or an Offline / Printed Document (report title, issuing organization, publication date). URL imports automatically record their data URL as an online reference. Offline citations do not upload scanned documents. Authorized updates are stored in the shared Render PostgreSQL database. Administrators can download a JSON backup of approved updates. All source claims must be checked before publication.</p>
-<h3>Measurement Parameters</h3>
-<p>The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
+<h3>Measurement Parameters and Environmental Intelligence</h3>
+<p>The interpretation engine explains six parameters and highlights uncertainty without declaring water-safe status. The application displays six parameters reported by LLDA for the selected stations: dissolved oxygen (DO), biochemical oxygen demand (BOD), pH, nitrate, inorganic phosphate, and total suspended solids (TSS). These are historical readings, not live measurements. COD, turbidity, and temperature are not included because the selected source does not provide them for this station/period subset.</p>
 <details class="method-details"><summary>Data accuracy, historical coverage and station chronology</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
 
 
 
-<h3>References</h3>
+<h3>Advanced Features</h3><p>Interpretation panels explain measured values without certifying compliance. Analytics includes matched-period station comparisons and an explainable linear trend model gated by data adequacy. Report Studio can export source-labeled PDFs. Incident reports are administrator-documented, not automatically confirmed by LLDA. Lake Context separates Open-Meteo air-temperature/rainfall estimates and separately curated environmental datasets from in-lake laboratory measurements.</p><h3>References</h3><ul><li><a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo Historical Weather API</a></li><li><a href="https://emb.gov.ph/wp-content/uploads/2019/04/DAO-2016-08_WATER-QUALITY-GUIDELINES-AND-GENERAL-EFFLUENT-STANDARDS.pdf" target="_blank" rel="noopener noreferrer">DENR Water Quality Guidelines (2016)</a></li><li><a href="https://r9.emb.gov.ph/wp-content/uploads/2023/09/DAO-2021-19-Updated-Water-Quality-Guidelines.pdf" target="_blank" rel="noopener noreferrer">DENR Updated Water Quality Guidelines (2021)</a></li></ul>
 <ul>
 <li><a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC, Laguna de Bay: Experiences and Lessons Learned, Table 3 (1990–2000 annual means)</a></li>
 <li><a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 Annual Water Quality Report (station additions and annual averages)</a></li>
@@ -497,5 +573,25 @@
 <span>Developed by Ian Titus F. Ramones &amp; Dycyn T. Alvaro</span>
 <span>LSPU – San Pablo City Campus · 2026</span>
 </footer>
+<dialog class="admin-auth-dialog" id="manager-auth-dialog" aria-labelledby="manager-auth-title" aria-describedby="manager-auth-description">
+  <div class="admin-auth-inner">
+    <div class="admin-auth-topline">
+      <span class="admin-auth-brand"><span class="admin-auth-brand-dot" aria-hidden="true"></span> LAKEWATCH LAGUNA</span>
+      <button class="admin-auth-close" type="button" id="manager-auth-close" aria-label="Close administrator sign-in">&times;</button>
+    </div>
+    <div class="admin-auth-symbol" aria-hidden="true">&#128274;</div>
+    <h2 id="manager-auth-title">Administrator sign-in</h2>
+    <p id="manager-auth-description">Sign in securely without leaving the page you're exploring.</p>
+    <form id="manager-login-form" class="manager-login-form">
+      <label for="manager-login-email">Administrator email</label>
+      <input class="search-input" id="manager-login-email" type="email" required autocomplete="username" placeholder="admin@example.com">
+      <label for="manager-login-password">Password</label>
+      <input class="search-input" id="manager-login-password" type="password" required autocomplete="current-password" minlength="12">
+      <button class="button button--primary button--full" type="submit" id="manager-login-submit">Sign in securely</button>
+    </form>
+    <p class="manager-message" id="manager-auth-message" role="status" aria-live="polite"></p>
+    <p class="admin-auth-footnote">Administrator access is required to publish or correct records.</p>
+  </div>
+</dialog>
 </body>
 </html>

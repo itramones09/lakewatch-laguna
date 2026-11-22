@@ -156,6 +156,7 @@
       </div>
       <p class="module-caption">Select a reporting month above to update these readings.</p>
       <div class="reading-grid">${renderValueCards(s,selectedPeriod)}</div>
+      <div class="interpretation-panel" id="station-interpretation" aria-live="polite"></div>
       <details class="profile-sources">
         <summary>Station history and location sources</summary>
         <div class="profile-source-body">
@@ -174,7 +175,9 @@
         ? "No monthly measurements are imported for this identifier; archived does not confirm official closure."
         : imported ? "Some readings were administrator-updated in the shared database. Expand station sources for online/offline citations; not a live sensor feed."
         : `Measurements: <a href="${safe(measurementSource)}" target="_blank" rel="noopener noreferrer">LLDA ${sourceLabel} report</a> · Historical, not live.`}</p>
+      <button class="button" type="button" data-open-view="reports">Export station PDF report</button>
       ${s.position ? '<button class="button button--primary" type="button" data-show-station-map>Find station on map</button>' : '<p class="module-caption">Location not shown because no independent position has been verified.</p>'}`;
+    window.LakeWatchStudio?.renderInterpretation({stationId:selectedStationId,period:selectedPeriod});
   }
 
   function selectStation(stationId, options={}) {
@@ -246,7 +249,24 @@
     explorerManager.initialize();
   }
 
+  function ensureDataManager(){
+    if(!dataset)return null;
+    if(!dataManager){
+      dataManager=window.LakeWatchData.create({dataset});
+      dataManager.ready=dataManager.initialize();
+    }
+    return dataManager;
+  }
+
   function showView(name) {
+    // Authentication never changes the current page or its filters.
+    if(name === 'manage'){
+      const manager=ensureDataManager();
+      if(!manager || !manager.isAuthenticated()){
+        manager?.openLogin();
+        return;
+      }
+    }
     const chosen = $("view-" + name);
     if (!chosen) return;
     currentView = name;
@@ -260,9 +280,8 @@
       else button.removeAttribute("aria-current");
     });
     if(name === "explorer") ensureExplorer();
-    if(name === "manage" && dataset) {
-      if(!dataManager){dataManager=window.LakeWatchData.create({dataset});dataManager.initialize();}
-    }
+    window.LakeWatchStudio?.onView(name);
+    if(name === "reports") window.LakeWatchStudio?.selectReport({stationId:selectedStationId,period:selectedPeriod});
     if(name === "analytics") {
       ensureAnalytics();
       ensureHistory();
@@ -283,6 +302,7 @@
           onBoundary: text => { $("boundary-note").textContent = text; }
         });
         mapManager.initialize(dataset, selectedStationId, selectedPeriod, selectedParameter);
+        window.LakeWatchStudio?.setMapManager(mapManager);
       }
       requestAnimationFrame(() => mapManager.invalidateSize());
     }
@@ -292,8 +312,22 @@
   }
 
   document.addEventListener("click", e => {
+    const adminTrigger=e.target.closest('[data-admin-login]');
+    if(adminTrigger){
+      const manager=ensureDataManager();
+      if(!manager)return;
+      if(!manager.isAuthenticated()) manager.openLogin();
+      else if(adminTrigger.dataset.adminTarget){
+        const form=$(adminTrigger.dataset.adminTarget);
+        form?.querySelector('input,select,textarea')?.focus();
+      } else showView('manage');
+      return;
+    }
     const nav = e.target.closest("[data-view], [data-open-view]");
-    if (nav) showView(nav.dataset.view || nav.dataset.openView);
+    if (nav) {
+      showView(nav.dataset.view || nav.dataset.openView);
+      if(nav.dataset.scrollTarget) requestAnimationFrame(()=>document.getElementById(nav.dataset.scrollTarget)?.scrollIntoView({block:"start",behavior:"smooth"}));
+    }
     const quick=e.target.closest("[data-parameter-quick]");
     if(quick && dataset){
       selectedParameter=quick.dataset.parameterQuick;
@@ -390,12 +424,18 @@
         sel.value=selectedPeriod;
       }
       updateParameterKeys();
+      const manager=ensureDataManager();
+      await manager.ready;
+      window.LakeWatchStudio?.initialize({dataset});
       renderDirectory();
       renderProfile();
       renderMapStationPanel();
       $("map-station-locator").value=selectedStationId;
       $("map-status").textContent = "Station records loaded";
-      if(["map", "analytics", "explorer", "manage"].includes(currentView)) showView(currentView);
+      // Restore Manage Data after a saved update only when the login session is valid.
+      // Do not steal navigation if the user selected a different module while loading.
+      if(wantsManageRestore && currentView==='overview' && manager.isAuthenticated())showView('manage');
+      else if(["map", "analytics", "explorer"].includes(currentView)) showView(currentView);
     } catch(error) {
       console.error("Station data not available",error);
       const help="Cannot load data/stations.json. Open the project with VS Code Live Server (http://localhost), not by double-clicking index.html.";
@@ -414,6 +454,9 @@
     const stored = window.sessionStorage.getItem('lakewatch-current-view');
     if (stored && $("view-" + stored)) initialView = stored;
   } catch (_) {}
-  showView(initialView);
+  // Restore a signed-in Manage Data tab after reload, but never show a login page
+  // in place of a module before the administrator session is verified.
+  const wantsManageRestore=initialView==='manage' && Boolean(window.LakeWatchAPI?.token());
+  showView(initialView==='manage'?'overview':initialView);
   start();
 })();
