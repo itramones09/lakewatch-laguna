@@ -13,7 +13,7 @@
         ["Choose a water-quality parameter", "Click one of the six color-coded parameter shortcuts to open its charts and interpretation in Analytics."],
         ["Choose a task", "Use the task cards to find a station, explore the map, compare observations or create a PDF report."],
         ["Navigate by category", "Use Explore, Analysis & Reports, Administration, or Help & Information in the grouped navigation. The breadcrumb shows your current module."],
-        ["Open module-specific guidance", "Select User Manual in the website header, then choose the module tab. The floating manual stays open while you navigate."],
+        ["Open module-specific guidance", "Open Help & Information → Open User Manual, then choose the module tab. The floating manual stays open while you navigate."],
       ],
       tip: "Parameter colors identify measurement types—not whether the lake water is safe or unsafe."
     },
@@ -126,7 +126,6 @@
 
   const lookup = new Map(guides.map(item => [item.id, item]));
   const escapeText = value => String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
-  const toggle = document.getElementById('user-manual-toggle');
   const win = document.getElementById('user-manual-window');
   const restore = document.getElementById('manual-restore');
   const tabs = document.getElementById('manual-tabs');
@@ -134,7 +133,7 @@
   const loc = document.getElementById('manual-current-location');
   const go = document.getElementById('manual-open-module');
   const dragHandle = document.getElementById('manual-drag-handle');
-  if (!toggle || !win || !tabs || !body || !restore) return;
+  if (!win || !tabs || !body || !restore) return;
 
   let active = 'overview';
   let lastFocus = null;
@@ -169,20 +168,17 @@
     lastFocus = document.activeElement;
     win.hidden = false;
     restore.hidden = true;
-    toggle.setAttribute('aria-expanded','true');
     renderGuide(id);
     tabs.querySelector(`[data-manual-tab="${active}"]`)?.focus({preventScroll:true});
   }
   function close(){
     win.hidden = true;
     restore.hidden = true;
-    toggle.setAttribute('aria-expanded','false');
     if (lastFocus?.isConnected) lastFocus.focus({preventScroll:true});
   }
   function minimize(){
     win.hidden = true;
     restore.hidden = false;
-    toggle.setAttribute('aria-expanded','false');
     restore.focus({preventScroll:true});
   }
   function followView(id) {
@@ -190,7 +186,6 @@
     if (!win.hidden && lookup.has(id)) renderGuide(id);
   }
 
-  toggle.addEventListener('click', () => win.hidden ? show() : close());
   restore.addEventListener('click', () => show(active));
   document.getElementById('manual-close')?.addEventListener('click', close);
   document.getElementById('manual-minimize')?.addEventListener('click', minimize);

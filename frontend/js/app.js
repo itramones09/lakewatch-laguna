@@ -96,8 +96,6 @@
     document.querySelectorAll(".nav-group").forEach(group => {
       const active = group.dataset.navGroup === groupKey;
       group.classList.toggle("has-active", active);
-      const currentLabel = group.querySelector("[data-nav-current]");
-      if (currentLabel) currentLabel.textContent = active ? current : group.dataset.navCount;
       group.open = active;
     });
     document.title = `${current} | LakeWatch Laguna`;
