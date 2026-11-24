@@ -20,6 +20,7 @@
       document.documentElement.dataset.theme = preference === "system" ? (osDark ? "dark" : "light") : preference;
     })();
   </script>
+<script>try { document.documentElement.dataset.appMode = sessionStorage.getItem("lakewatch-app-mode") === "full" ? "full" : "lite"; } catch (_) { document.documentElement.dataset.appMode = "lite"; }</script>
 <link href="css/style.css" rel="stylesheet"/>
 <script defer="" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script defer="" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -36,6 +37,7 @@
 <script defer="" src="js/data-manager.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script defer src="js/intelligence-studio.js"></script>
+<script defer src="js/mode.js"></script>
 <script defer src="js/user-manual.js"></script>
 <script defer src="js/photo-gallery.js"></script>
 <script defer="" src="js/app.js"></script>
@@ -97,10 +99,12 @@
     <div class="nav-group-menu" role="group" aria-label="Help and information">
       <button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
       <button class="nav-manual-link" data-manual-open="current" type="button"><span aria-hidden="true">▤</span> Open User Manual</button>
+      <button class="nav-manual-link" id="mode-switch" type="button">Unlock Full Mode</button>
     </div>
   </details>
 </nav>
 <div class="module-context-bar" id="module-context-bar">
+  <span id="mode-status" role="status" class="tag">Lite Mode</span>
   <nav class="module-breadcrumb" aria-label="Current location">
     <span id="breadcrumb-category">Dashboard</span><span aria-hidden="true">/</span><strong id="breadcrumb-current">Environmental Overview</strong>
   </nav>
@@ -123,9 +127,9 @@
 
   <div class="kpi-grid overview-kpis" aria-label="Dataset summary">
     <article class="panel metric-card metric-card--accent"><span class="metric-icon" aria-hidden="true">⌖</span><span class="metric-caption">Stations with recent readings</span><strong id="overview-active-count">16</strong><small id="overview-active-caption">Based on the latest imported period</small></article>
-    <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">◷</span><span class="metric-caption">Archived / no recent readings</span><strong id="overview-archived-count">3</strong><small>Archived does not confirm official station closure.</small></article>
+    <article data-full-only class="panel metric-card"><span class="metric-icon" aria-hidden="true">◷</span><span class="metric-caption">Archived / no recent readings</span><strong id="overview-archived-count">3</strong><small>Archived does not confirm official station closure.</small></article>
     <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">▤</span><span class="metric-caption">Latest reporting period</span><strong id="overview-latest-period">June 2026</strong><small id="overview-latest-coverage">Reporting coverage is being calculated.</small></article>
-    <article class="panel metric-card"><span class="metric-icon" aria-hidden="true">∑</span><span class="metric-caption">Monthly reported values</span><strong id="overview-reading-count">186</strong><small>Available values across the imported monthly dataset.</small></article>
+    <article data-full-only class="panel metric-card"><span class="metric-icon" aria-hidden="true">∑</span><span class="metric-caption">Monthly reported values</span><strong id="overview-reading-count">186</strong><small>Available values across the imported monthly dataset.</small></article>
   </div>
 
   <section class="overview-data-status panel" aria-labelledby="overview-data-status-title">
@@ -148,14 +152,14 @@
     <div class="overview-section-heading"><div><p class="eyebrow">A SIMPLE WAY TO BEGIN</p><h3 id="overview-start-title">What would you like to do?</h3><p class="module-caption">Choose a task. Each workspace opens with the tools you need for that activity.</p></div><button class="overview-manual-link" type="button" data-manual-open="overview">Read the quick guide ↗</button></div>
     <div class="overview-task-grid">
       <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--teal" aria-hidden="true">⌖</span><div><h4>Find a monitoring station</h4><p>Search by station identifier or lake bay, then open its profile and available measurements.</p></div><button type="button" data-open-view="stations">Browse stations <span aria-hidden="true">→</span></button></article>
-      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--blue" aria-hidden="true">⌁</span><div><h4>Explore the lake map</h4><p>Locate mapped stations, review the selected parameter and inspect documented incident areas.</p></div><button type="button" data-open-view="map">Open lake map <span aria-hidden="true">→</span></button></article>
+      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--blue" aria-hidden="true">⌁</span><div><h4>Explore the lake map</h4><p>Locate mapped stations, review the selected parameter<span data-full-only> and inspect documented incident areas</span>.</p></div><button type="button" data-open-view="map">Open lake map <span aria-hidden="true">→</span></button></article>
       <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--violet" aria-hidden="true">▥</span><div><h4>Compare and interpret</h4><p>Compare matched reporting periods, review parameter interpretations and inspect historical trends.</p></div><button type="button" data-open-view="analytics">Open analytics <span aria-hidden="true">→</span></button></article>
-      <article class="overview-task-card"><span class="overview-task-icon overview-task-icon--gold" aria-hidden="true">▣</span><div><h4>Create a PDF report</h4><p>Choose a station or reporting scope, preview the evidence and generate a source-labeled report.</p></div><button type="button" data-open-view="reports">Open report studio <span aria-hidden="true">→</span></button></article>
+      <article data-full-only class="overview-task-card"><span class="overview-task-icon overview-task-icon--gold" aria-hidden="true">▣</span><div><h4>Create a PDF report</h4><p>Choose a station or reporting scope, preview the evidence and generate a source-labeled report.</p></div><button type="button" data-open-view="reports">Open report studio <span aria-hidden="true">→</span></button></article>
     </div>
   </section>
 
   <div class="overview-bottom-grid">
-    <article class="panel overview-coverage-card"><div class="panel-heading"><div><p class="eyebrow">DATA COVERAGE</p><h3>What is included?</h3></div><span class="tag tag--teal">Source-documented</span></div><ul class="overview-check-list"><li><strong>Six parameters</strong><span>DO, BOD, pH, nitrate, phosphate and TSS.</span></li><li><strong>Monthly observations</strong><span>Imported reporting periods from October–December 2023 and June 2026.</span></li><li><strong>Longer historical context</strong><span>Separate annual reference series are available in Analytics.</span></li></ul><button class="button" data-open-view="explorer" type="button">Open Data Explorer</button></article>
+    <article class="panel overview-coverage-card"><div class="panel-heading"><div><p class="eyebrow">DATA COVERAGE</p><h3>What is included?</h3></div><span class="tag tag--teal">Source-documented</span></div><ul class="overview-check-list"><li><strong>Six parameters</strong><span>DO, BOD, pH, nitrate, phosphate and TSS.</span></li><li><strong>Monthly observations</strong><span>Imported reporting periods from October–December 2023 and June 2026.</span></li><li data-full-only><strong>Longer historical context</strong><span>Separate annual reference series are available in Analytics.</span></li></ul><button class="button" data-open-view="explorer" type="button">Open Data Explorer</button></article>
     <aside class="panel overview-help-card"><span class="overview-help-icon" aria-hidden="true">▤</span><h3>New to LakeWatch Laguna?</h3><p>Use the floating User Manual for module-by-module instructions. It stays open while you continue navigating the application.</p><button class="button button--primary" type="button" data-manual-open="overview">Open User Manual</button></aside>
   </div>
 </section>
@@ -189,7 +193,7 @@
 <div class="side-divider"></div>
 <label class="toggle-line"><input checked="" id="show-boundary" type="checkbox"/> <span>Show lake boundary</span></label>
 <label class="toggle-line"><input checked="" id="show-stations" type="checkbox"/> <span>Show station markers</span></label>
-<label class="toggle-line"><input checked id="show-incidents" type="checkbox"/> <span>Show documented incident locations</span></label>
+<label data-full-only class="toggle-line"><input checked id="show-incidents" type="checkbox"/> <span>Show documented incident locations</span></label>
 <label class="form-label" for="map-station-search">Find a station</label>
 <input class="search-input map-station-search" id="map-station-search" type="search" autocomplete="off" placeholder="Search station ID or lake bay" aria-controls="map-station-locator">
 <label class="form-label" for="map-station-locator">Choose a matching station</label>
@@ -229,7 +233,7 @@
 
 </aside>
 </div>
-<section class="environment-desk" aria-labelledby="incident-title">
+<section data-full-only class="environment-desk" aria-labelledby="incident-title">
   <div class="panel-heading"><div><p class="eyebrow">Environmental Watch</p><h3 id="incident-title">Incident reporting</h3><p class="module-caption">Browse source-documented reports; an incident marker reflects its monitoring area, not a surveyed incident coordinate.</p></div><span class="tag">Administrator-documented reports</span></div>
   <div class="incident-layout">
     <div class="panel"><h4>Documented incidents</h4><div id="incident-feed" aria-live="polite" class="incident-feed"><p class="hint">Loading reports…</p></div></div>
@@ -333,7 +337,7 @@
 </article>
 </div>
 <div class="analytics-meta" role="status"><span id="analytics-selected-reading">Selected reading will appear here.</span><span id="analytics-render-mode">Preparing charts...</span></div>
-<section aria-labelledby="history-title" class="panel historical-panel">
+<section data-full-only aria-labelledby="history-title" class="panel historical-panel">
 <div class="panel-heading"><div><h3 id="history-title">Extended Historical Archive · 1990–June 2026</h3><p class="chart-subtitle">Three distinct observation methods · source-backed annual data and preserved monthly readings</p></div><span class="tag tag--teal">Long-term context</span></div>
 <p class="history-guardrail">The historical chart keeps lake-wide annual, station annual and station monthly series separate. Missing years are not interpolated.</p>
 <div class="history-controls">
@@ -348,7 +352,7 @@
 <details class="chart-data-details"><summary>View all plotted source readings and missing-year explanations</summary><div class="table-scroll"><table><thead><tr><th scope="col">Series</th><th scope="col">Year / month</th><th scope="col">Reported value</th><th scope="col">Source</th></tr></thead><tbody id="history-table-body"></tbody></table></div></details>
 <details class="source-details"><summary>Historical data sources</summary><p class="source-caption">Source: <a href="https://ilec.or.jp/cms/wp-content/uploads/pub/15_Laguna_de_Bay_27February2006.pdf" rel="noopener noreferrer" target="_blank">ILEC historical lake-wide averages, Table 3</a> · <a href="https://llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/AWQR_2009-2012.pdf" rel="noopener noreferrer" target="_blank">LLDA 2009–2012 annual station report</a> · <a href="https://llda.gov.ph/ldb-and-its-tributaries/" rel="noopener noreferrer" target="_blank">LLDA 2023/2026 quarterly reports</a>.</p></details>
 </section>
-<section class="studio-section" aria-labelledby="comparison-studio-title">
+<section data-full-only class="studio-section" aria-labelledby="comparison-studio-title">
 <div class="studio-section-head"><div><p class="eyebrow">Analysis Lab / 01</p><h3 id="comparison-studio-title">Multi-station comparison</h3><p class="module-caption">Compare the same parameter in the same sampling month. Missing or below-limit readings stay labeled.</p></div><span class="tag">Comparable observations only</span></div>
 <div class="intelligence-grid">
   <div class="panel studio-controls">
@@ -366,7 +370,7 @@
   <div class="panel studio-visual"><h4>Comparison at a glance</h4><div id="studio-comp-chart" class="studio-bars" aria-live="polite"></div><div id="studio-comp-summary" class="studio-insight" role="status"></div></div>
 </div>
 </section>
-<section class="studio-section" aria-labelledby="forecast-title">
+<section data-full-only class="studio-section" aria-labelledby="forecast-title">
 <div class="studio-section-head"><div><p class="eyebrow">Analysis Lab / 02</p><h3 id="forecast-title">Predictive water-quality analytics</h3><p class="module-caption">Transparent linear-trend demonstration with data-adequacy checks. These estimates are not official forecasts.</p></div><span class="tag tag--teal">Explainable model</span></div>
 <div class="intelligence-grid">
   <div class="panel studio-controls">
@@ -620,8 +624,8 @@
     <div class="about-two-column">
       <article class="panel about-info-card" aria-labelledby="about-purpose-title">
         <div class="about-card-heading"><span class="about-icon about-icon--teal" aria-hidden="true">⌖</span><h3 id="about-purpose-title">Project purpose</h3></div>
-        <p>LakeWatch Laguna is an academic environmental information platform for exploring published Laguna de Bay monitoring measurements through interactive maps, station profiles, charts, and source-labeled reports.</p>
-        <p>It helps visitors locate monitoring areas, understand water-quality parameters, compare historical observations, and examine supporting environmental context.</p>
+        <p>LakeWatch Laguna is an academic environmental information platform for exploring published Laguna de Bay monitoring measurements through interactive maps, station profiles, charts<span data-full-only>, and source-labeled reports</span>.</p>
+        <p>It helps visitors locate monitoring areas, understand water-quality parameters, compare historical observations<span data-full-only>, and examine supporting environmental context</span>.</p>
         <p class="about-note"><strong>Data status:</strong> This is a publicly accessible website with shared data updates, not an official live LLDA water-quality sensor feed.</p>
       </article>
       <article class="panel about-info-card" aria-labelledby="about-capabilities-title">
@@ -629,15 +633,15 @@
         <ul class="about-check-list">
           <li>Explore mapped station areas and historical readings</li>
           <li>Interpret six parameters and compare station results</li>
-          <li>Inspect annual historical trends and forecasting limits</li>
-          <li>Browse documented incidents and weather context</li>
-          <li>Export source-labeled PDF reports and filtered CSV</li>
-          <li>Submit verified updates through protected Manage Data</li>
+          <li data-full-only>Inspect annual historical trends and forecasting limits</li>
+          <li data-full-only>Browse documented incidents and weather context</li>
+          <li data-full-only>Export source-labeled PDF reports and filtered CSV</li>
+          <li data-full-only>Submit verified updates through protected Manage Data</li>
         </ul>
       </article>
     </div>
 
-    <div class="about-two-column">
+    <div data-full-only class="about-two-column">
       <article class="panel about-info-card" aria-labelledby="about-stewardship-title">
         <div class="about-card-heading"><span class="about-icon about-icon--blue" aria-hidden="true">▣</span><h3 id="about-stewardship-title">Data stewardship</h3></div>
         <p>Manage Data supports manual entry, CSV/Excel file import and import from a direct data URL. Manual/file observations may cite an online publication or a printed/offline document.</p>
@@ -725,7 +729,7 @@
 <aside id="user-manual-window" class="user-manual-window" aria-label="LakeWatch Laguna user manual" hidden>
   <div class="manual-window-head" id="manual-drag-handle">
     <div class="manual-window-title"><span class="manual-window-icon" aria-hidden="true">▤</span><div>
-      <strong id="manual-window-title">User Manual</strong><small>Phase 11.5 · Complete guide · keep browsing while open</small>
+      <strong id="manual-window-title">User Manual</strong><small id="manual-mode-label">Phase 11.6 · Lite guide</small>
     </div></div>
     <div class="manual-window-actions">
       <button type="button" id="manual-minimize" aria-label="Minimize user manual" title="Minimize">−</button>
@@ -741,6 +745,9 @@
   </div>
 </aside>
 <button type="button" id="manual-restore" class="manual-restore" hidden aria-label="Restore user manual">▤ Open User Manual</button>
+<dialog id="mode-dialog" class="mode-dialog" aria-labelledby="mode-title">
+  <form id="mode-form"><h2 id="mode-title">Unlock Full Mode</h2><p>Enter the four-digit presentation PIN. Administrator permissions remain separate.</p><label for="mode-pin">Access PIN</label><input id="mode-pin" class="search-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" required><p id="mode-error" role="alert"></p><div class="mode-actions"><button type="button" class="button" id="mode-cancel">Cancel</button><button type="submit" class="button button--primary">Unlock</button></div></form>
+</dialog>
 <dialog class="lake-photo-dialog" id="lake-photo-dialog" aria-labelledby="lake-photo-title">
   <div class="lake-photo-dialog-top">
     <span class="lake-photo-counter" id="lake-photo-counter">Photo 1 of many</span>

@@ -1,10 +1,16 @@
-# LakeWatch Laguna — Complete User Manual · Phase 11.5
+# LakeWatch Laguna — Complete User Manual · Phase 11.6
 
 **Project:** Water Quality Monitoring & Visualization, Laguna de Bay  
 **Developers:** Dycyn T. Alvaro and Ian Titus F. Ramones  
 **Program:** Master in Information Technology (MIT)  
 **Institution:** Laguna State Polytechnic University – San Pablo City Campus  
 **Course:** WITM 101 — Advanced Web Design and Programming
+
+## Application modes
+
+The website opens in Lite Mode in a new browser session. Lite displays Overview, Lake Map, Monitoring Stations, basic Analytics and About & Sources; the manual shows only these five guides. To unlock all modules, choose Help & Information → Unlock Full Mode and enter the configured presentation PIN. Choose Switch to Lite Mode to hide advanced workspaces again without a PIN. The current mode persists during the browser session. Full Mode does not grant administrator permissions. The frontend PIN is a presentation control, not a security boundary.
+
+In Lite Mode, select a map marker, inspect six measurements in the station profile, and compare readings with the basic Analytics charts. Source references and the official LLDA website remain available. The detailed guide below describes Full Mode; advanced sections are unavailable in Lite Mode.
 
 ## Open and navigate the built-in manual
 

@@ -316,6 +316,7 @@
   }
 
   function showView(name) {
+    if (!window.LakeWatchMode.allows(name)) name = "overview";
     // Authentication never changes the current page or its filters.
     if(name === 'manage'){
       const manager=ensureDataManager();
@@ -362,6 +363,7 @@
           onBoundary: text => { $("boundary-note").textContent = text; }
         });
         mapManager.initialize(dataset, selectedStationId, selectedPeriod, selectedParameter);
+        mapManager.showIncidents(window.LakeWatchMode.isFull() && $("show-incidents").checked);
         window.LakeWatchStudio?.setMapManager(mapManager);
       }
       requestAnimationFrame(() => mapManager.invalidateSize());
@@ -374,6 +376,7 @@
   document.addEventListener("click", e => {
     const adminTrigger=e.target.closest('[data-admin-login]');
     if(adminTrigger){
+      if (!window.LakeWatchMode.isFull()) return;
       const manager=ensureDataManager();
       if(!manager)return;
       if(!manager.isAuthenticated()) manager.openLogin();
@@ -507,6 +510,11 @@
       $("explorer-match-count").textContent="Data unavailable";
     }
   }
+  window.addEventListener("lakewatch-mode-change",()=>{
+    if (!window.LakeWatchMode.allows(currentView)) showView("overview");
+    mapManager?.showIncidents(window.LakeWatchMode.isFull() && $("show-incidents").checked);
+    if(currentView === "analytics") requestAnimationFrame(()=>{analyticsManager?.refresh(); historicalManager?.refresh?.();});
+  });
   window.addEventListener("lakewatch-theme-change",()=>{ if(currentView==="analytics") { analyticsManager?.refresh(); historicalManager?.refresh?.(); } });
   let initialView = 'overview';
   try {
@@ -515,7 +523,7 @@
   } catch (_) {}
   // Restore a signed-in Manage Data tab after reload, but never show a login page
   // in place of a module before the administrator session is verified.
-  const wantsManageRestore=initialView==='manage' && Boolean(window.LakeWatchAPI?.token());
+  const wantsManageRestore=window.LakeWatchMode.isFull() && initialView==='manage' && Boolean(window.LakeWatchAPI?.token());
   showView(initialView==='manage'?'overview':initialView);
   document.querySelectorAll(".nav-group").forEach(group => group.addEventListener("toggle", () => {
     if (!group.open) return;

@@ -4,7 +4,7 @@
  * It does not trap focus, blur the page, or prevent interacting with main navigation.
  */
 (() => {
-  const guides = [
+  const fullGuides = [
     {
       id: "overview", label: "Overview", kicker: "Start here", title: "Environmental Overview",
       summary: "Your starting point for understanding Laguna de Bay's monitored areas, available parameters and historical coverage.",
@@ -137,7 +137,19 @@
     }
   ];
 
-  const lookup = new Map(guides.map(item => [item.id, item]));
+  const liteGuides = fullGuides.filter(g=>window.LakeWatchMode.allowsLite(g.id)).map(g=>{
+    const steps = {
+      overview: [["Review the overview", "Check the reporting stations and latest reporting period."],["Choose a parameter", "Open charts using one of the six parameter shortcuts."],["Navigate", "Use Explore for the map and stations, Analysis for charts, and Help & Information for references and this guide."]],
+      map: [["Choose month and parameter", "Use Map Controls to select the measurement shown on markers."],["Explore the map", "Zoom, pan, toggle the boundary or station layer, and select a marker."],["Open a station", "Read the selected station card or open its profile."]],
+      stations: [["Find a station", "Search by identifier or lake bay and select a station."],["Select a month", "Choose an available reporting period."],["Read six parameters", "Review the values, units and interpretation. Missing readings are not zero."]],
+      analytics: [["Choose filters", "Select a station, parameter and comparison month."],["Read charts", "Review the station trend and compare stations for matching periods."],["Inspect exact values", "Use the source-value tables to check missing and qualified readings."]],
+      about: [["Read Academic Context", "Review the project purpose and academic information."],["Visit LLDA", "Use the official LLDA website link."],["Review sources", "Open the references and methodology to understand data and map limitations."]]
+    };
+    const summaries={overview:"Start with the map, station readings or charts.",map:"Explore Laguna de Bay and its monitoring locations.",stations:"Review available measurements and interpretations.",analytics:"Visualize and compare reported water-quality observations.",about:"Review academic context, source references and limitations."};
+    return {...g,title:g.id==='map'?'Interactive Lake Map':g.title,summary:summaries[g.id],steps:steps[g.id],tip:g.id==='map'?'Station coordinates are approximate, not certified LLDA sampling GPS positions.':g.id==='analytics'?'Compare like parameters, dates and units.':g.tip};
+  });
+  let guides = window.LakeWatchMode.isFull()?fullGuides:liteGuides;
+  let lookup = new Map(guides.map(item => [item.id, item]));
   const escapeText = value => String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
   const win = document.getElementById('user-manual-window');
   const restore = document.getElementById('manual-restore');
@@ -175,7 +187,13 @@
     tabs.querySelector(`[data-manual-tab="${guide.id}"]`)?.scrollIntoView({block:'nearest',inline:'nearest'});
   }
 
-  tabs.innerHTML = guides.map(guide => `<button type="button" id="manual-tab-${guide.id}" class="manual-tab" data-manual-tab="${guide.id}" role="tab" aria-controls="manual-content" aria-selected="false" tabindex="-1">${escapeText(guide.label)}</button>`).join('');
+  function rebuildTabs(){ tabs.innerHTML = guides.map(guide => `<button type="button" id="manual-tab-${guide.id}" class="manual-tab" data-manual-tab="${guide.id}" role="tab" aria-controls="manual-content" aria-selected="false" tabindex="-1">${escapeText(guide.label)}</button>`).join(''); }
+  rebuildTabs();
+  window.addEventListener('lakewatch-mode-change',()=>{
+    guides=window.LakeWatchMode.isFull()?fullGuides:liteGuides;
+    lookup=new Map(guides.map(g=>[g.id,g]));
+    rebuildTabs(); renderGuide(lookup.has(active)?active:'overview');
+  });
 
   function show(id=currentMainModule()){
     lastFocus = document.activeElement;
