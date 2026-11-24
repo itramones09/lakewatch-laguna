@@ -1,3 +1,7 @@
+## Phase 11.5 — Rotating Photo Gallery and synchronized User Manual
+
+Perspective coverflow, automatic rotation with pause/play, manual navigation, filtered enlarged viewer, reduced-motion support and updated ten-module guide. See `docs/PHASE11_5_ROTATING_GALLERY_AND_MANUAL.md`.
+
 ## Phase 11.4 — Direct Photo Gallery, LLDA portal and expanded historical selector
 
 The top navigation now includes a dedicated **Photo Gallery** button. The Wikimedia Commons carousel has moved out of About & Sources, which now provides a prominent official [LLDA](https://llda.gov.ph/) homepage link. The redundant About color-card was removed. Analytics → Extended Historical Archive now lists all six parameters while leaving unavailable 1990–2012 annual measurements blank for DO, pH, nitrate and phosphate. See `docs/PHASE11_4_GALLERY_MENU_LLDA_AND_ARCHIVE.md`.

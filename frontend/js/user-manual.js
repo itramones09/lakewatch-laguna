@@ -12,8 +12,9 @@
         ["Review the summary cards", "Check the station counts, latest reporting period and number of imported monthly values. These describe the dataset, not live sensor activity."],
         ["Choose a water-quality parameter", "Click one of the six color-coded parameter shortcuts to open its charts and interpretation in Analytics."],
         ["Choose a task", "Use the task cards to find a station, explore the map, compare observations or create a PDF report."],
-        ["Navigate by category", "Use Explore, Analysis & Reports, Administration, or Help & Information in the grouped navigation. The breadcrumb shows your current module."],
-        ["Open module-specific guidance", "Open Help & Information → Open User Manual, then choose the module tab. The floating manual stays open while you navigate."],
+        ["Navigate by category", "Use Explore, Analysis & Reports, Administration, or Help & Information in the grouped navigation. Photo Gallery is a direct main-menu button. The breadcrumb shows your current module."],
+        ["Switch appearance", "Use the sun/moon button in the header to toggle light and dark mode. Your choice is saved in this browser when storage is available."],
+        ["Open module-specific guidance", "Open Help & Information → Open User Manual, then choose the module tab. The floating manual stays open while you navigate. Choose a tab or Open module; minimize, restore, close or drag the header on desktop."],
       ],
       tip: "Parameter colors identify measurement types—not whether the lake water is safe or unsafe."
     },
@@ -51,7 +52,7 @@
       steps: [
         ["Set the main chart filters", "Choose Monitoring station, Water quality parameter and Comparison month. The historical trend and comparison views will respond."],
         ["Inspect exact values", "Open View exact station values under the charts. The tables preserve missing and below-reporting-limit labels."],
-        ["Explore the extended historical archive", "Choose any of the six parameters and a station. BOD/TSS include imported annual records; the other parameters show available monthly observations only. Missing years remain blank."],
+        ["Explore the extended historical archive", "Choose DO, BOD, pH, nitrate, phosphate or TSS and a station in Extended Historical Archive (1990–June 2026). BOD/TSS include annual records; the others have available monthly observations only. Lake-wide annual (1990–2000), station annual (2009–2012) and monthly (2023 / June 2026) series remain separate. Missing years stay blank. Expand plotted source readings and Historical data sources to verify coverage."],
         ["Compare several stations", "Under Multi-station comparison, choose a parameter and month. Check stations individually, or use Select All with Readings. Use Unselect All to clear the selection."],
         ["Review predictive analytics", "Choose a model dataset, parameter and station (if applicable), then click Evaluate forecast. The tool may report insufficient data rather than estimate a current value."],
         ["Open station or export report", "Use Station Profile, Show on Map, or Export PDF to continue working with the selected observation."],
@@ -114,12 +115,13 @@
       summary: "Browse an expanding collection of real lake and shoreline photographs credited to Wikimedia Commons contributors.",
       steps: [
         ["Open the Photo Gallery", "Select Photo Gallery directly from the main menu bar."],
-        ["Browse the carousel", "Use Previous and Next or swipe across the images on a touchscreen."],
-        ["Filter photographs", "Use All photos, Lake views, Lakeside life, or Sunsets. Search matches photos already loaded."],
+        ["Browse the carousel", "The center photo rotates automatically every 4.2 seconds when the gallery is visible. Side previews show nearby photos in perspective. Hover to temporarily pause; use Pause rotation or Play rotation to control playback."],
+        ["Navigate manually", "Use the arrows, Left/Right keys when the preview region has focus, or swipe horizontally. Manual navigation pauses rotation. Photos wrap around the loaded matching collection."],
+        ["Filter photographs", "Use All photos, Lake views, Lakeside life, or Sunsets. Search matches photos already loaded. Filtering or searching pauses rotation; select Play rotation to resume."],
         ["Retrieve more photographs", "Select Load more photographs to request additional lake-focused Wikimedia Commons records."],
-        ["Enlarge and credit a photo", "Select the image to open its viewer; use the source and license links to check creator and reuse information."],
+        ["Enlarge and credit a photo", "Select the center image to open its enlarged viewer. Use its arrows or Left/Right keys to browse matching photos; close with Escape or the close button. Source and license links identify the creator and reuse conditions."],
       ],
-      tip: "The gallery uses externally hosted photographs and internet access. Photos illustrate Laguna de Bay; they are not measurements of water quality."
+      tip: "The gallery uses externally hosted photographs and internet access, including featured photo URLs. Automatic rotation is initially off if your device requests reduced motion. Photos illustrate Laguna de Bay; they are not measurements of water quality."
     },
     {
       id: "about", label: "About & Sources", kicker: "Methods and references", title: "About & Sources",
@@ -128,8 +130,8 @@
         ["Read Academic Context", "The first card lists the university campus, MIT program, course and project developers."],
         ["Review purpose and capabilities", "Read Project purpose and What you can do to understand the application's scope."],
         ["Understand limitations", "Read Data stewardship and Environmental intelligence. Expand Data methodology & limitations for dates, station chronology and coordinate reliability."],
-        ["Visit the official LLDA site", "Use Visit LLDA official website to open the authority's homepage in a new tab."],
-        ["Open source references", "Use the grouped References & source library card to open original LLDA reports, guidelines, geographic references and technical documentation."],
+        ["Visit the official LLDA site", "Below Academic Context, use Visit LLDA official website to open https://llda.gov.ph/ in a new tab. LakeWatch is an independent academic project, not an official LLDA service."],
+        ["Open source references", "Photo Gallery is now a separate main-menu module, and parameter colors are explained in Overview. Use the grouped References & source library card to open original LLDA reports, guidelines, geographic references and technical documentation."],
       ],
       tip: "The website is live, but its water-quality measurements are not a live LLDA sensor feed."
     }

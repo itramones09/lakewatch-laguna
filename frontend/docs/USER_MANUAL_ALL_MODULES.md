@@ -1,4 +1,4 @@
-# LakeWatch Laguna — Complete User Manual
+# LakeWatch Laguna — Complete User Manual · Phase 11.5
 
 **Project:** Water Quality Monitoring & Visualization, Laguna de Bay  
 **Developers:** Dycyn T. Alvaro and Ian Titus F. Ramones  
@@ -26,7 +26,8 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 1. Read the overview tiles for monitored lake, number of parameters, active/archived counts and imported monthly readings.
 2. Click a color-coded parameter tile to open its charts in **Analytics**.
 3. Use the feature launchpad to open **Compare & Predict**, **Lake Context**, **Reports** or **Incident Watch**.
-4. Use the main menu or quick-access buttons to browse stations, charts and records.
+4. Use Explore, Analysis & Reports, Administration and Help & Information, or the direct **Photo Gallery** button. The breadcrumb identifies the current module.
+5. Use the header sun/moon button to toggle light and dark appearance.
 
 **Note:** Parameter colors identify the type of reading; they are not water-quality ratings.
 
@@ -39,7 +40,8 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 3. Inspect its reading in **Selected Station**, and click **Open Station Profile** for details.
 4. Toggle **Show lake boundary**, **Show station markers** and **Show documented incident locations**.
 5. Click **Reset Map View** to return to the full lake region.
-6. Scroll to **Incident reporting** to browse documented events. An administrator can sign in, provide an incident date/category/description/reference, and publish a sourced report.
+6. Use **Find a station**, Street/Satellite and Expand map to locate and inspect stations; Escape exits the expanded map.
+7. Scroll to **Incident reporting** to browse documented events. An administrator can sign in, provide an incident date/category/description/reference, and publish a sourced report.
 
 **Location limitation:** Some station tags have published research coordinates; others have approximate area-level positions. These are not certified LLDA sampling GPS coordinates. Incident markers indicate a monitoring area, not a surveyed event location.
 
@@ -62,7 +64,7 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 
 1. Select a **Monitoring station**, **Water quality parameter** and **Comparison month** in the main analytics toolbar.
 2. Review the trend and comparison charts; expand **View exact station values** to see labels not plotted as exact numeric values.
-3. In **Extended Historical Archive**, choose any of the six parameters and a station. BOD/TSS additionally have imported annual records; other parameters show available monthly values only. Data gaps are not interpolated.
+3. In **Extended Historical Archive**, choose any of the six parameters and a station. BOD/TSS additionally have imported annual records; other parameters show available monthly values only. Data gaps are not interpolated. The selector includes DO, BOD, pH, nitrate, phosphate and TSS. Lake-wide annual (1990–2000), station annual (2009–2012) and station monthly (2023 / June 2026) series are distinct. Expand the plotted source readings and Historical data sources to check coverage.
 4. In **Multi-station comparison**, choose a parameter and reporting month. Select station checkboxes manually or use **Select All with Readings**. Use **Unselect All** to clear the selection.
 5. Under **Predictive water-quality analytics**, select dataset/parameter/station and click **Evaluate forecast**. When data are insufficient, the tool displays an explanatory limitation instead of a prediction.
 6. Use **Station Profile**, **Show on Map**, and **Export PDF** to continue to other modules.
@@ -127,9 +129,23 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 
 1. Read the top **Academic Context** card for university, degree, course, academic year and tandem developers.
 2. Review **Project purpose** and **What you can do**.
-3. Consult the **Water-quality parameter colors** card.
+3. Click **Visit LLDA official website** below Academic Context to open https://llda.gov.ph/ in a new tab. Parameter colors are explained in Overview; the gallery is a separate main-menu module.
 4. Read **Data stewardship** and **Environmental intelligence**; expand **Data methodology & limitations** for historical coverage, station chronology and location confidence.
 5. Open the grouped **References & source library** cards for LLDA records, environmental guidelines, geographic tools and weather data.
+
+## 10. Photo Gallery (main navigation)
+
+**Purpose:** Explore real, attributed Laguna de Bay photographs in an animated perspective carousel.
+
+1. Select **Photo Gallery** directly from the top menu bar.
+2. The center photo advances every 4.2 seconds while the gallery is visible. Adjacent photos appear in perspective. Hover over the preview to temporarily pause it.
+3. Use **Pause rotation** or **Play rotation**. Arrows, keyboard Left/Right when the preview region has focus, or a horizontal swipe rotate the matching collection manually and pause autoplay. The collection wraps around.
+4. Filter by **All photos**, **Lake views**, **Lakeside life**, or **Sunsets**, or search loaded photographs. These actions pause rotation; use Play rotation to resume.
+5. Use **Load more photographs** to retrieve further lake-focused Commons images. Retry if the external service is unavailable.
+6. Select the center photo to open an enlarged viewer. Browse matching photos using its arrows or keyboard Left/Right; close with Escape or the close button. Opening a photo pauses rotation.
+7. Review the photographer, original file page and reuse license. Visit the Wikimedia Commons collection link for further source information.
+
+**Accessibility and connectivity:** Autoplay is initially off when reduced motion is requested. Photos are externally hosted, including the featured fallback URLs, and require internet access. Photos are illustrative, not water-quality observations.
 
 ## General limitations and source handling
 
@@ -140,18 +156,3 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 - Treat any user-published observations and incidents as administrator-sourced data that require independent verification.
 
 
-## Photo Gallery (main navigation)
-
-**Purpose:** Explore real, attributed Laguna de Bay photographs without leaving the application.
-
-1. Select **Photo Gallery** directly from the top menu bar.
-2. Browse the image carousel with the arrows or swipe.
-3. Filter by Lake Views, Lakeside Life or Sunsets, or search already-loaded photographs.
-4. Use **Load more photographs** to retrieve more Commons images as available.
-5. Select a photo for an enlarged view, original file page and reuse license.
-
-**Note:** The gallery is separate from About & Sources and excludes tributary-focused categories.
-
-## Official LLDA website
-
-In **Help & Information → About & Sources**, use the **Visit LLDA official website** link below Academic Context to open https://llda.gov.ph/ in a new tab. LakeWatch Laguna is an independent student application and is not an LLDA government service.

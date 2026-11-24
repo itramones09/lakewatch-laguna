@@ -1,4 +1,4 @@
-/* Phase 11.1 — on-demand, source-credited Commons photo carousel.
+/* Phase 11.5 — on-demand, source-credited Commons photo carousel.
    Fetches the Laguna de Bay file category and lake-related descendants; no bulk downloads. */
 (()=>{
   'use strict';
@@ -77,6 +77,10 @@
   let photos=featuredPhotos.map(p=>({...p,kind:'featured'}));
   let filtered=[],start=0,filter='all',search='',loading=false,exhausted=false,apiFailed=false;
   let activeDialogIndex=0;
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let playing=!reduced.matches, hovering=false;
+  const cards=new Map();
+  const section=$('view-gallery'), toggle=$('lake-carousel-play');
   const toVisit=[{title:rootCategory,depth:0,next:null}];
   const visitedCategories=new Set([rootCategory]);
   const pendingTitles=[];
@@ -162,7 +166,6 @@
     if(search&&!`${p.title} ${p.place} ${p.author}`.toLowerCase().includes(search))return false;
     return true;
   });}
-  function perView(){const width=grid.clientWidth||window.innerWidth;return width<540?1:width<870?2:3;}
   function remaining(){return pendingTitles.length>0||toVisit.length>0;}
   function makeCard(p,index){
     const card=document.createElement('article');card.className='lake-photo-card';card.setAttribute('aria-label',`${index+1} of ${filtered.length}: ${p.title}`);
@@ -180,13 +183,32 @@
   }
   function render(){
     filtered=current();
-    const visible=perView();
-    start=Math.max(0,Math.min(start,Math.max(0,filtered.length-visible)));
-    grid.replaceChildren(...filtered.slice(start,start+visible).map((p,i)=>makeCard(p,start+i)));
-    if(!filtered.length)grid.append(text('p','lake-carousel-empty','No matching photos loaded yet. Try All photos or load more Commons records.'));
-    back.disabled=start===0;
-    forward.disabled=filtered.length===0||(start+visible>=filtered.length&&exhausted);
-    pos.textContent=filtered.length?`${start+1}–${Math.min(start+visible,filtered.length)} of ${filtered.length} loaded`:'No matching photos';
+    const n=filtered.length;
+    start=n?((start%n)+n)%n:0;
+    for(const [p,card] of cards){if(!filtered.includes(p)){card.remove();cards.delete(p);}}
+    grid.querySelector('.lake-carousel-empty')?.remove();
+    const visible=new Set();
+    for(let offset=-2;offset<=2;offset++){
+      if(!n)break;
+      const i=(start+offset+n*2)%n,p=filtered[i];
+      // For short collections use the nearest unique position, preferring the right on ties.
+      const d=(i-start+n)%n;
+      const slot=d>n/2?d-n:d;
+      if(slot!==offset)continue;
+      visible.add(p);
+      let card=cards.get(p);
+      if(!card){card=makeCard(p,i);cards.set(p,card);grid.append(card);}
+      card.dataset.slot=String(slot);
+      card.setAttribute('aria-label',`${i+1} of ${n}: ${p.title}`);
+      card.inert=slot!==0;
+      card.setAttribute('aria-hidden',String(slot!==0));
+    }
+    for(const [p,card] of cards){if(!visible.has(p)){card.remove();cards.delete(p);}}
+    if(!n)grid.append(text('p','lake-carousel-empty','No matching photos loaded yet. Try All photos or load more Commons records.'));
+    back.disabled=n<2;forward.disabled=n<2;toggle.disabled=n<2;
+    toggle.textContent=playing?'Pause rotation':'Play rotation';
+    pos.setAttribute('aria-live',playing?'off':'polite');
+    pos.textContent=n?`${start+1} of ${n} loaded`:'No matching photos';
     countEl.textContent=`${photos.length} photographs loaded${exhausted?' · collection scanned':''}`;
     more.disabled=loading||exhausted;
     more.hidden=exhausted&&!apiFailed;
@@ -210,16 +232,16 @@
       if(!remaining())exhausted=true;
       status.textContent=exhausted
         ?'Reached the end of the scanned lake-focused Commons category tree. Files can be added by Wikimedia editors.'
-        :`${added} more image(s) added. Continue with the arrows or Load more photographs.`;
+        :`${added} more image(s) added. Use the arrows to rotate or Load more photographs to expand the collection.`;
     }catch(err){
       apiFailed=true;
       status.textContent=`Wikimedia Commons is temporarily unavailable (${err.message}). The eight featured photographs remain available. Retry to load the collection.`;
     }finally{loading=false;render();}
   }
-  function setFilter(value){filter=value;start=0;render();}
+  function setFilter(value){playing=false;filter=value;start=0;render();}
   function displayPhoto(p){
-    const idx=photos.indexOf(p);activeDialogIndex=idx<0?0:idx;
-    $('lake-photo-counter').textContent=`Photo ${activeDialogIndex+1} of ${photos.length} loaded`;
+    const idx=filtered.indexOf(p);activeDialogIndex=idx<0?0:idx;
+    $('lake-photo-counter').textContent=`Photo ${activeDialogIndex+1} of ${filtered.length} matching`;
     $('lake-photo-title').textContent=p.title;
     $('lake-photo-description').textContent=`${p.description} · ${p.place} · ${p.year}`;
     $('lake-photo-credit').textContent=`Creator / uploader credit: ${p.author} · ${p.license}`;
@@ -227,8 +249,8 @@
     $('lake-photo-license').href=p.licenseUrl||licenseURLs[p.license]||p.source;
     error.hidden=true;large.hidden=false;large.src=p.url;large.alt=p.title;
   }
-  function openPhoto(p){displayPhoto(p);if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');}
-  function movePhoto(delta){activeDialogIndex=(activeDialogIndex+delta+photos.length)%photos.length;displayPhoto(photos[activeDialogIndex]);}
+  function openPhoto(p){playing=false;render();displayPhoto(p);if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');}
+  function movePhoto(delta){if(!filtered.length)return;activeDialogIndex=(activeDialogIndex+delta+filtered.length)%filtered.length;displayPhoto(filtered[activeDialogIndex]);}
   large.addEventListener('error',()=>{large.hidden=true;error.hidden=false;});
   $('lake-photo-close').addEventListener('click',()=>dialog.close?.());
   $('lake-photo-prev').addEventListener('click',()=>movePhoto(-1));
@@ -239,13 +261,16 @@
     document.querySelectorAll('[data-lake-filter]').forEach(b=>{const on=b===button;b.classList.toggle('is-selected',on);b.setAttribute('aria-pressed',String(on));});
     setFilter(button.dataset.lakeFilter);
   }));
-  $('lake-gallery-search').addEventListener('input',e=>{search=e.target.value.toLowerCase().trim();start=0;render();});
-  back.addEventListener('click',()=>{start=Math.max(0,start-perView());render();});
-  forward.addEventListener('click',async()=>{
-    const next=start+perView();
-    if(next>=filtered.length&&!exhausted)await loadMore();
-    start=Math.min(next,Math.max(0,current().length-perView()));render();
-  });
+  $('lake-gallery-search').addEventListener('input',e=>{playing=false;search=e.target.value.toLowerCase().trim();start=0;render();});
+  function rotate(delta,manual=false){if(filtered.length<2)return;if(manual)playing=false;start+=delta;render();}
+  back.addEventListener('click',()=>rotate(-1,true));
+  forward.addEventListener('click',()=>rotate(1,true));
+  toggle.addEventListener('click',()=>{playing=!playing;render();});
+  grid.addEventListener('pointerenter',()=>hovering=true);
+  grid.addEventListener('pointerleave',()=>hovering=false);
+  grid.addEventListener('focusin',()=>{playing=false;render();});
+  reduced.addEventListener?.('change',e=>{if(e.matches){playing=false;render();}});
+  setInterval(()=>{if(playing&&!hovering&&!section.hidden&&!document.hidden&&!dialog.open&&!grid.contains(document.activeElement))rotate(1);},4200);
   more.addEventListener('click',loadMore);
   grid.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'){e.preventDefault();back.click();}
@@ -254,7 +279,7 @@
   let touchStart=0;
   grid.addEventListener('touchstart',e=>{touchStart=e.touches[0]?.clientX||0;},{passive:true});
   grid.addEventListener('touchend',e=>{const diff=(e.changedTouches[0]?.clientX||0)-touchStart;if(Math.abs(diff)>55)(diff>0?back:forward).click();},{passive:true});
-  window.addEventListener('resize',()=>render(),{passive:true});
+
   window.addEventListener('lakewatch-gallery-show',()=>render());
   render();
   loadMore();

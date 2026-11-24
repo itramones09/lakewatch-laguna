@@ -1113,3 +1113,21 @@ html[data-theme="dark"] .lake-carousel-arrow:not(:disabled):hover{background:#0d
 .about-llda-portal-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--teal);color:#fff!important;text-decoration:none;font-size:12px;font-weight:850;padding:13px 17px;border-radius:10px;white-space:nowrap;min-height:42px}
 .about-llda-portal-link:hover{background:var(--teal-dark);color:#fff!important}
 @media(max-width:760px){.nav-gallery{min-height:40px;margin:0;padding:9px 10px;font-size:12px}.about-llda-portal{padding:17px 16px;gap:14px}.about-llda-portal-link{width:100%;white-space:normal;text-align:center}}
+
+
+/* Phase 11.5 — rotating perspective coverflow. Only the centered card is interactive. */
+.lake-rotation-hint{font-size:12px;color:var(--muted);margin:0 0 8px;text-align:center}
+.lake-carousel-play{min-height:42px;white-space:nowrap;font-size:12px}
+.lake-gallery-carousel{position:relative;display:block;isolation:isolate;perspective:1300px;overflow:hidden;min-height:0;height:clamp(330px,39vw,530px);border-radius:18px;background:radial-gradient(ellipse at 50% 40%,var(--accent-soft),var(--canvas) 75%);touch-action:pan-y}
+.lake-gallery-carousel .lake-photo-card{position:absolute;left:50%;top:4%;width:49%;height:auto;max-height:92%;overflow:auto;transform:translateX(-50%);transition:transform .65s cubic-bezier(.22,.8,.25,1),opacity .65s;box-shadow:0 15px 36px rgba(0,0,0,.22);will-change:transform,opacity;backface-visibility:hidden}
+.lake-gallery-carousel .lake-photo-card[data-slot="0"]{z-index:5;transform:translateX(-50%) rotateY(0);opacity:1}
+.lake-gallery-carousel .lake-photo-card[data-slot="-1"]{z-index:3;transform:translateX(-113%) translateZ(-145px) rotateY(35deg);opacity:.8;pointer-events:none}
+.lake-gallery-carousel .lake-photo-card[data-slot="1"]{z-index:3;transform:translateX(13%) translateZ(-145px) rotateY(-35deg);opacity:.8;pointer-events:none}
+.lake-gallery-carousel .lake-photo-card[data-slot="-2"]{z-index:1;transform:translateX(-165%) translateZ(-310px) rotateY(48deg);opacity:.38;pointer-events:none}
+.lake-gallery-carousel .lake-photo-card[data-slot="2"]{z-index:1;transform:translateX(65%) translateZ(-310px) rotateY(-48deg);opacity:.38;pointer-events:none}
+.lake-gallery-carousel .lake-photo-open{aspect-ratio:16/9;max-height:clamp(180px,25vw,350px)}
+.lake-gallery-carousel .lake-photo-open-overlay{opacity:1}
+.lake-gallery-carousel .lake-photo-card-body{flex:0 0 auto}
+.lake-gallery-carousel .lake-carousel-empty{height:100%}
+@media(max-width:700px){.lake-gallery-carousel{height:clamp(330px,76vw,450px)}.lake-gallery-carousel .lake-photo-card{width:76%}.lake-gallery-carousel .lake-photo-open{max-height:240px}.lake-carousel-actions{flex-wrap:wrap;justify-content:center}.lake-carousel-play{flex:0 0 auto}}
+@media(prefers-reduced-motion:reduce){.lake-gallery-carousel .lake-photo-card{transition:none}}
