@@ -66,4 +66,4 @@ For production, follow the deployment guide and keep existing Render secrets; ne
 The lake-only map now uses a wider map-first layout, Street/Satellite basemap buttons, and an expanded view. The global User Manual replaces the redundant per-module guide link. See `docs/PHASE10_5_LAKE_ONLY_MAP_UI.md`.
 
 ## Phase 11.6 — Dual Mode
-Default Lite Mode; Help & Information → Unlock Full Mode opens the presentation PIN dialog. Full Mode restores Phase 11.5 features. See docs/PHASE11_6_DUAL_MODE.md. Existing administrator authorization remains separate.
+Presentation visibility is session-scoped. See the maintainer notes in docs/PHASE11_7_KEYBOARD_ACCESS.md. Existing administrator authorization remains separate.

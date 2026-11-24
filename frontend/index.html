@@ -99,12 +99,10 @@
     <div class="nav-group-menu" role="group" aria-label="Help and information">
       <button class="nav-btn" data-view="about" type="button">About &amp; Sources</button>
       <button class="nav-manual-link" data-manual-open="current" type="button"><span aria-hidden="true">▤</span> Open User Manual</button>
-      <button class="nav-manual-link" id="mode-switch" type="button">Unlock Full Mode</button>
     </div>
   </details>
 </nav>
 <div class="module-context-bar" id="module-context-bar">
-  <span id="mode-status" role="status" class="tag">Lite Mode</span>
   <nav class="module-breadcrumb" aria-label="Current location">
     <span id="breadcrumb-category">Dashboard</span><span aria-hidden="true">/</span><strong id="breadcrumb-current">Environmental Overview</strong>
   </nav>
@@ -726,10 +724,10 @@
 </footer>
 
 <!-- Non-modal guidance: no backdrop, so other modules remain clickable. -->
-<aside id="user-manual-window" class="user-manual-window" aria-label="LakeWatch Laguna user manual" hidden>
+<aside id="user-manual-window" tabindex="-1" class="user-manual-window" aria-label="LakeWatch Laguna user manual" hidden>
   <div class="manual-window-head" id="manual-drag-handle">
     <div class="manual-window-title"><span class="manual-window-icon" aria-hidden="true">▤</span><div>
-      <strong id="manual-window-title">User Manual</strong><small id="manual-mode-label">Phase 11.6 · Lite guide</small>
+      <strong id="manual-window-title">User Manual</strong><small>Module guide</small>
     </div></div>
     <div class="manual-window-actions">
       <button type="button" id="manual-minimize" aria-label="Minimize user manual" title="Minimize">−</button>
@@ -746,7 +744,7 @@
 </aside>
 <button type="button" id="manual-restore" class="manual-restore" hidden aria-label="Restore user manual">▤ Open User Manual</button>
 <dialog id="mode-dialog" class="mode-dialog" aria-labelledby="mode-title">
-  <form id="mode-form"><h2 id="mode-title">Unlock Full Mode</h2><p>Enter the four-digit presentation PIN. Administrator permissions remain separate.</p><label for="mode-pin">Access PIN</label><input id="mode-pin" class="search-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" required><p id="mode-error" role="alert"></p><div class="mode-actions"><button type="button" class="button" id="mode-cancel">Cancel</button><button type="submit" class="button button--primary">Unlock</button></div></form>
+  <form id="mode-form"><h2 id="mode-title">Access verification</h2><p>Enter your four-digit PIN.</p><label for="mode-pin">Access PIN</label><input id="mode-pin" class="search-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" required><p id="mode-error" role="alert"></p><div class="mode-actions"><button type="button" class="button" id="mode-cancel">Cancel</button><button type="submit" class="button button--primary">Unlock</button></div></form>
 </dialog>
 <dialog class="lake-photo-dialog" id="lake-photo-dialog" aria-labelledby="lake-photo-title">
   <div class="lake-photo-dialog-top">

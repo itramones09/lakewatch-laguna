@@ -217,6 +217,10 @@
     if (!win.hidden && lookup.has(id)) renderGuide(id);
   }
 
+  // Clicking non-interactive guide content makes the floating window active.
+  win.addEventListener('pointerdown', e=>{
+    if(!e.target.closest('button,a,input,select,textarea,[tabindex]'))win.focus({preventScroll:true});
+  });
   restore.addEventListener('click', () => show(active));
   document.getElementById('manual-close')?.addEventListener('click', close);
   document.getElementById('manual-minimize')?.addEventListener('click', minimize);
