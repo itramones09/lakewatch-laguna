@@ -117,6 +117,7 @@
         ["Review purpose and capabilities", "Read Project purpose and What you can do to understand the application's scope."],
         ["Use the color key", "The Parameter colors card identifies the six displayed measurements without implying safety status."],
         ["Understand limitations", "Read Data stewardship and Environmental intelligence. Expand Data methodology & limitations for dates, station chronology and coordinate reliability."],
+        ["Browse the lake photographs", "Browse the Wikimedia Commons photo carousel using Previous/Next or swipe. Search and filter photos loaded so far, click Load more photographs to retrieve additional lake-related Commons category records, and open an image to see its photographer and license links."],
         ["Open source references", "Use the grouped References & source library card to open original LLDA reports, guidelines, geographic references and technical documentation."],
       ],
       tip: "The website is live, but its water-quality measurements are not a live LLDA sensor feed."

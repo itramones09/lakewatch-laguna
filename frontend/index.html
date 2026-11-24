@@ -37,6 +37,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script defer src="js/intelligence-studio.js"></script>
 <script defer src="js/user-manual.js"></script>
+<script defer src="js/photo-gallery.js"></script>
 <script defer="" src="js/app.js"></script>
 </head>
 <body><a class="skip-link" href="#app-content">Skip to main content</a>
@@ -652,6 +653,41 @@
       <details class="method-details"><summary>Read historical coverage, station establishment evidence and map accuracy</summary><p>The monthly explorer preserves 186 historical LLDA quarterly-report measurements: five-station Q4 2023 and June 2026 data from 16 reported stations. In addition, 21 reported lake-wide BOD/TSS annual averages for 1990–2000 (ILEC) and 48 station annual averages for 2009–2012 (LLDA) are kept in a separate historical file, giving 255 distinct reported values in total. This is not a live monitoring API. The site preserves each reading’s source period and units. Values such as &lt;0.1 are preserved as detection-limit labels rather than incorrectly assigned exact numeric values. Only the 16 map-pinnable reporting stations have approximate coordinates. Identifiers III, VI, VII are documented in the directory with no speculative map markers; Station VII conflicts across the 2017 LLDA map and table. Official establishment date is unknown except inclusion years explicitly documented as 2012 and 2021. Marker coordinates remain approximate visual estimates and must never be represented as official sampling GPS positions. The outline loads OpenStreetMap relation geometry when possible and otherwise falls back to an explicitly labeled schematic.</p><p>LLDA has conducted water monitoring since 1973; that year is <strong>not</strong> the founding date of every station. I, II, IV, V and VIII were active by at least 2009, with no verified individual establishment dates. LLDA documents four additional stations XV–XVIII added in 2012; PSA/LLDA documents XIII and XIX–XXIII added in 2021. Station XXIV appears in the June 2026 roster but its exact founding date has not been established. Identifiers III, VI and VII are shown as unverified registry references only; the 2017 LLDA annual table calls South Bay VII while its maps elsewhere use VIII. Their independent physical existence and precise sites are not confirmed.</p></details>
     </article>
 
+    <article class="panel lake-photo-gallery" id="about-photo-gallery" aria-labelledby="lake-photo-gallery-title">
+      <div class="lake-gallery-top">
+        <div class="about-card-heading"><span class="about-icon about-icon--blue" aria-hidden="true">▧</span><div>
+          <h3 id="lake-photo-gallery-title">Laguna de Bay Photo Gallery</h3>
+          <p class="about-subtitle">Real photographs of the lake, its shores and lakeside communities.</p>
+        </div></div>
+        <span class="lake-gallery-count" id="lake-gallery-count" aria-live="polite">Loading Wikimedia Commons collection…</span>
+      </div>
+      <div class="lake-gallery-filters" role="group" aria-label="Filter lake photographs">
+        <button type="button" class="lake-filter is-selected" data-lake-filter="all" aria-pressed="true">All photos</button>
+        <button type="button" class="lake-filter" data-lake-filter="view" aria-pressed="false">Lake views</button>
+        <button type="button" class="lake-filter" data-lake-filter="shore" aria-pressed="false">Lakeside life</button>
+        <button type="button" class="lake-filter" data-lake-filter="sunset" aria-pressed="false">Sunsets</button>
+      </div>
+      <div class="lake-gallery-toolbar">
+        <label class="lake-gallery-search-label" for="lake-gallery-search">Search loaded photos
+          <input type="search" id="lake-gallery-search" class="search-input" placeholder="Search filename or photographer…" autocomplete="off">
+        </label>
+        <div class="lake-carousel-actions" aria-label="Photo carousel controls">
+          <button type="button" class="lake-carousel-arrow" id="lake-carousel-prev" aria-label="Previous photos" title="Previous photos">←</button>
+          <span id="lake-carousel-position" class="lake-carousel-position" aria-live="polite">Browse photos</span>
+          <button type="button" class="lake-carousel-arrow" id="lake-carousel-next" aria-label="Next photos" title="Next photos">→</button>
+        </div>
+      </div>
+      <div class="lake-gallery-carousel" id="lake-gallery-grid" role="region" aria-roledescription="carousel" aria-label="Laguna de Bay photographs" tabindex="0"></div>
+      <div class="lake-gallery-load-row">
+        <p id="lake-gallery-status" class="lake-gallery-status" role="status" aria-live="polite">Showing featured photographs while the collection loads.</p>
+        <button type="button" class="button lake-gallery-more" id="lake-gallery-more">Load more photographs</button>
+      </div>
+      <div class="lake-gallery-foot">
+        <p>Photographs are retrieved in batches from the Wikimedia Commons Laguna de Bay category and lake-related subcategories. Files are not stored in LakeWatch. Each photo links to its original description and available license. Search and filters cover images loaded so far; load more to browse further. This gallery is illustrative, not evidence of monitoring-station conditions.</p>
+        <a href="https://commons.wikimedia.org/wiki/Category:Laguna_de_Bay" target="_blank" rel="noopener noreferrer">Visit the original Laguna de Bay collection on Wikimedia Commons ↗</a>
+      </div>
+    </article>
+
     <article class="panel about-references-card" aria-labelledby="about-references-title">
       <div class="about-card-heading"><span class="about-icon about-icon--teal" aria-hidden="true">↗</span><div>
         <h3 id="about-references-title">References &amp; source library</h3>
@@ -689,6 +725,22 @@
   </div>
 </aside>
 <button type="button" id="manual-restore" class="manual-restore" hidden aria-label="Restore user manual">▤ Open User Manual</button>
+<dialog class="lake-photo-dialog" id="lake-photo-dialog" aria-labelledby="lake-photo-title">
+  <div class="lake-photo-dialog-top">
+    <span class="lake-photo-counter" id="lake-photo-counter">Photo 1 of many</span>
+    <button type="button" id="lake-photo-close" class="lake-photo-close" aria-label="Close image viewer">×</button>
+  </div>
+  <div class="lake-photo-large-wrap"><img id="lake-photo-large" alt="" decoding="async"><div id="lake-photo-unavailable" class="lake-photo-unavailable" hidden>Photo cannot load right now. Open the source page to view the original.</div></div>
+  <div class="lake-photo-dialog-footer">
+    <div class="lake-photo-details">
+      <h3 id="lake-photo-title"></h3>
+      <p id="lake-photo-description"></p>
+      <p class="lake-photo-license-note" id="lake-photo-credit"></p>
+      <div class="lake-photo-sources"><a id="lake-photo-source" href="#" target="_blank" rel="noopener noreferrer">Original photograph ↗</a><a id="lake-photo-license" href="#" target="_blank" rel="noopener noreferrer">Reuse license ↗</a></div>
+    </div>
+    <div class="lake-photo-controls"><button type="button" id="lake-photo-prev" aria-label="Previous photograph">←</button><button type="button" id="lake-photo-next" aria-label="Next photograph">→</button></div>
+  </div>
+</dialog>
 <dialog class="admin-auth-dialog" id="manager-auth-dialog" aria-labelledby="manager-auth-title" aria-describedby="manager-auth-description">
   <div class="admin-auth-inner">
     <div class="admin-auth-topline">
