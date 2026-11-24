@@ -255,6 +255,7 @@
   grid.addEventListener('touchstart',e=>{touchStart=e.touches[0]?.clientX||0;},{passive:true});
   grid.addEventListener('touchend',e=>{const diff=(e.changedTouches[0]?.clientX||0)-touchStart;if(Math.abs(diff)>55)(diff>0?back:forward).click();},{passive:true});
   window.addEventListener('resize',()=>render(),{passive:true});
+  window.addEventListener('lakewatch-gallery-show',()=>render());
   render();
   loadMore();
 })();

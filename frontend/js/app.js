@@ -9,9 +9,9 @@
   const $ = id => document.getElementById(id);
   const views = Array.from(document.querySelectorAll(".view"));
   const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
-  const navGroupByView = {map:"explore",stations:"explore",explorer:"explore",context:"explore",analytics:"analysis",reports:"analysis",manage:"admin",about:"help"};
-  const moduleLabels = {overview:"Environmental Overview",map:"Interactive Lake Map",stations:"Monitoring Stations",analytics:"Water Quality Analytics",explorer:"Data Explorer",context:"Lake Context",reports:"Water Quality Reports",manage:"Manage Data",about:"About & Sources"};
-  const groupLabels = {overview:"Dashboard",explore:"Explore",analysis:"Analysis & Reports",admin:"Administration",help:"Help & Information"};
+  const navGroupByView = {map:"explore",stations:"explore",explorer:"explore",context:"explore",analytics:"analysis",reports:"analysis",manage:"admin",about:"help",gallery:"gallery"};
+  const moduleLabels = {overview:"Environmental Overview",map:"Interactive Lake Map",stations:"Monitoring Stations",analytics:"Water Quality Analytics",explorer:"Data Explorer",context:"Lake Context",reports:"Water Quality Reports",manage:"Manage Data",about:"About & Sources",gallery:"Photo Gallery"};
+  const groupLabels = {overview:"Dashboard",explore:"Explore",analysis:"Analysis & Reports",admin:"Administration",help:"Help & Information",gallery:"Visual Library"};
   const palette = window.LakeWatchPalette;
 
   let dataset = null;
@@ -140,7 +140,7 @@
     if (!dataset) return;
     const definitions=dataset.parameters;
     $("overview-parameter-guide").innerHTML=palette.legend(definitions,{clickable:true});
-    for (const id of ["map-parameter-key","station-parameter-key","about-parameter-key"])
+    for (const id of ["map-parameter-key","station-parameter-key"])
       $(id).innerHTML=palette.legend(definitions);
     updateCurrentParameter();
   }
@@ -338,6 +338,7 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
+    if(name === "gallery") window.dispatchEvent(new Event("lakewatch-gallery-show"));
     if(name === "explorer") ensureExplorer();
     window.LakeWatchStudio?.onView(name);
     if(name === "reports") window.LakeWatchStudio?.selectReport({stationId:selectedStationId,period:selectedPeriod});

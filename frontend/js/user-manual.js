@@ -51,7 +51,7 @@
       steps: [
         ["Set the main chart filters", "Choose Monitoring station, Water quality parameter and Comparison month. The historical trend and comparison views will respond."],
         ["Inspect exact values", "Open View exact station values under the charts. The tables preserve missing and below-reporting-limit labels."],
-        ["Explore the extended historical archive", "Choose BOD or TSS and a station. Review the lake-wide annual, station annual and monthly series separately; inspect the source table for unavailable years."],
+        ["Explore the extended historical archive", "Choose any of the six parameters and a station. BOD/TSS include imported annual records; the other parameters show available monthly observations only. Missing years remain blank."],
         ["Compare several stations", "Under Multi-station comparison, choose a parameter and month. Check stations individually, or use Select All with Readings. Use Unselect All to clear the selection."],
         ["Review predictive analytics", "Choose a model dataset, parameter and station (if applicable), then click Evaluate forecast. The tool may report insufficient data rather than estimate a current value."],
         ["Open station or export report", "Use Station Profile, Show on Map, or Export PDF to continue working with the selected observation."],
@@ -110,14 +110,25 @@
       tip: "Do not publish invented or uncited measurements. Manage Data is protected; public visitors may browse the datasets but cannot save changes."
     },
     {
+      id: "gallery", label: "Photo Gallery", kicker: "Explore lake photographs", title: "Laguna de Bay Photo Gallery",
+      summary: "Browse an expanding collection of real lake and shoreline photographs credited to Wikimedia Commons contributors.",
+      steps: [
+        ["Open the Photo Gallery", "Select Photo Gallery directly from the main menu bar."],
+        ["Browse the carousel", "Use Previous and Next or swipe across the images on a touchscreen."],
+        ["Filter photographs", "Use All photos, Lake views, Lakeside life, or Sunsets. Search matches photos already loaded."],
+        ["Retrieve more photographs", "Select Load more photographs to request additional lake-focused Wikimedia Commons records."],
+        ["Enlarge and credit a photo", "Select the image to open its viewer; use the source and license links to check creator and reuse information."],
+      ],
+      tip: "The gallery uses externally hosted photographs and internet access. Photos illustrate Laguna de Bay; they are not measurements of water quality."
+    },
+    {
       id: "about", label: "About & Sources", kicker: "Methods and references", title: "About & Sources",
       summary: "Understand the project, the developers, data methodology and the publications used in LakeWatch Laguna.",
       steps: [
         ["Read Academic Context", "The first card lists the university campus, MIT program, course and project developers."],
         ["Review purpose and capabilities", "Read Project purpose and What you can do to understand the application's scope."],
-        ["Use the color key", "The Parameter colors card identifies the six displayed measurements without implying safety status."],
         ["Understand limitations", "Read Data stewardship and Environmental intelligence. Expand Data methodology & limitations for dates, station chronology and coordinate reliability."],
-        ["Browse the lake photographs", "Browse the Wikimedia Commons photo carousel using Previous/Next or swipe. Search and filter photos loaded so far, click Load more photographs to retrieve additional lake-related Commons category records, and open an image to see its photographer and license links."],
+        ["Visit the official LLDA site", "Use Visit LLDA official website to open the authority's homepage in a new tab."],
         ["Open source references", "Use the grouped References & source library card to open original LLDA reports, guidelines, geographic references and technical documentation."],
       ],
       tip: "The website is live, but its water-quality measurements are not a live LLDA sensor feed."

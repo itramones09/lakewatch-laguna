@@ -1,14 +1,14 @@
 # LakeWatch Laguna — Complete User Manual
 
 **Project:** Water Quality Monitoring & Visualization, Laguna de Bay  
-**Developers:** Ian Titus F. Ramones and Dycyn T. Alvaro  
+**Developers:** Dycyn T. Alvaro and Ian Titus F. Ramones  
 **Program:** Master in Information Technology (MIT)  
 **Institution:** Laguna State Polytechnic University – San Pablo City Campus  
 **Course:** WITM 101 — Advanced Web Design and Programming
 
 ## Open and navigate the built-in manual
 
-1. Open the LakeWatch Laguna website, then click **User Manual** in the top header.
+1. Open the LakeWatch Laguna website, then select **Help & Information → Open User Manual**.
 2. The guide appears in a **floating non-modal window**. The normal website navigation remains usable while the guide is open. No page change or login is required to read the manual.
 3. Select a module from the manual's **horizontal menu at the top**. The instructions for that module appear underneath.
 4. Clicking a module in the **main website menu** automatically displays the matching guide while the manual remains open.
@@ -62,7 +62,7 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 
 1. Select a **Monitoring station**, **Water quality parameter** and **Comparison month** in the main analytics toolbar.
 2. Review the trend and comparison charts; expand **View exact station values** to see labels not plotted as exact numeric values.
-3. In **Extended Historical Archive**, choose BOD/TSS and a station. Distinguish lake-wide annual data, station annual averages and monthly station values; gaps are not interpolated.
+3. In **Extended Historical Archive**, choose any of the six parameters and a station. BOD/TSS additionally have imported annual records; other parameters show available monthly values only. Data gaps are not interpolated.
 4. In **Multi-station comparison**, choose a parameter and reporting month. Select station checkboxes manually or use **Select All with Readings**. Use **Unselect All** to clear the selection.
 5. Under **Predictive water-quality analytics**, select dataset/parameter/station and click **Evaluate forecast**. When data are insufficient, the tool displays an explanatory limitation instead of a prediction.
 6. Use **Station Profile**, **Show on Map**, and **Export PDF** to continue to other modules.
@@ -138,3 +138,20 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 - Station map positions must retain their source/accuracy labels. Unverified historical station identifiers are not assigned invented coordinates.
 - A parameter interpretation or forecast is educational decision support, not formal compliance certification.
 - Treat any user-published observations and incidents as administrator-sourced data that require independent verification.
+
+
+## Photo Gallery (main navigation)
+
+**Purpose:** Explore real, attributed Laguna de Bay photographs without leaving the application.
+
+1. Select **Photo Gallery** directly from the top menu bar.
+2. Browse the image carousel with the arrows or swipe.
+3. Filter by Lake Views, Lakeside Life or Sunsets, or search already-loaded photographs.
+4. Use **Load more photographs** to retrieve more Commons images as available.
+5. Select a photo for an enlarged view, original file page and reuse license.
+
+**Note:** The gallery is separate from About & Sources and excludes tributary-focused categories.
+
+## Official LLDA website
+
+In **Help & Information → About & Sources**, use the **Visit LLDA official website** link below Academic Context to open https://llda.gov.ph/ in a new tab. LakeWatch Laguna is an independent student application and is not an LLDA government service.

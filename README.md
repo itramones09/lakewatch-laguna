@@ -1,14 +1,18 @@
+## Phase 11.4 — Direct Photo Gallery, LLDA portal and expanded historical selector
+
+The top navigation now includes a dedicated **Photo Gallery** button. The Wikimedia Commons carousel has moved out of About & Sources, which now provides a prominent official [LLDA](https://llda.gov.ph/) homepage link. The redundant About color-card was removed. Analytics → Extended Historical Archive now lists all six parameters while leaving unavailable 1990–2012 annual measurements blank for DO, pH, nitrate and phosphate. See `docs/PHASE11_4_GALLERY_MENU_LLDA_AND_ARCHIVE.md`.
+
 ## Phase 10.3: User Experience & Navigation Enhancement
 
 The main navigation is grouped into task-based categories with a current-module breadcrumb and direct module guide. The Overview dashboard now summarizes dataset coverage, provides task-based shortcuts, and distinguishes shared database connectivity from historical water-quality observations. Lake Map adds station search, and Manage Data displays a four-step guided publishing workflow. This is a frontend-only update; existing API contracts, administrator credentials and PostgreSQL records are unchanged. See `docs/PHASE10_3_UX_ENHANCEMENT.md`.
 
 ## Phase 10.2: Floating User Manual & About page
 
-A non-blocking, draggable User Manual window now offers nine top-menu module guides, ordered instructions and quick navigation. About & Sources has a top Academic Context card, centered content, dedicated references and organized information cards. See `docs/PHASE10_2_USER_MANUAL_AND_ABOUT_LAYOUT.md` and `frontend/docs/USER_MANUAL_ALL_MODULES.md`. Frontend-only update; existing backend and database remain unchanged.
+A non-blocking, draggable User Manual window now offers ten module guides, ordered instructions and quick navigation. About & Sources has a top Academic Context card, centered content, dedicated references and organized information cards. See `docs/PHASE10_2_USER_MANUAL_AND_ABOUT_LAYOUT.md` and `frontend/docs/USER_MANUAL_ALL_MODULES.md`. Frontend-only update; existing backend and database remain unchanged.
 
 # LakeWatch Laguna — Phase 10 Full-Stack Environmental Intelligence
 
-**Developers:** Ian Titus F. Ramones and Dycyn T. Alvaro  
+**Developers:** Dycyn T. Alvaro and Ian Titus F. Ramones  
 **Program:** Master in Information Technology (MIT), Laguna State Polytechnic University — San Pablo City Campus  
 **Course:** WITM 101 Advanced Web Design and Programming
 
@@ -31,7 +35,8 @@ A responsive, color-coded web application for Laguna de Bay monitoring informati
 - Lake Context — separate atmospheric weather reference (Open-Meteo), cited lake and tributary contextual observations
 - Reports — live-rendered reports, source notes and downloadable professional PDF
 - Manage Data — existing administrator login, manual/file/URL imports and source documentation
-- About & Sources — provenance and methodology
+- Photo Gallery — lake-only Wikimedia Commons photo carousel, search, viewing and source credits
+- About & Sources — academic context, official LLDA link, provenance and methodology
 
 **Start here:** [`docs/PHASE10_INTELLIGENCE_DEPLOYMENT.md`](docs/PHASE10_INTELLIGENCE_DEPLOYMENT.md)
 
