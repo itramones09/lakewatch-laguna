@@ -1143,3 +1143,6 @@ html:not([data-app-mode="full"]) :is([data-full-only], [data-nav-group="admin"],
 
 /* Phase 11.11: cross-station analytics */
 .aq-panel{margin-bottom:20px}.aq-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.aq-controls label{display:grid;gap:6px;font-weight:600}.aq-fieldset{border:1px solid #8a9ba655;border-radius:10px;padding:10px;margin:12px 0;min-width:0}.aq-parameters,.aq-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.aq-parameters label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.aq-parameters i{width:12px;height:12px;border-radius:50%}.aq-chart-scroll{overflow-x:auto}.aq-chart-scroll svg{display:block;min-width:650px}.aq-legend{font-size:.85rem}.aq-actions{margin:14px 0}.aq-panel details{margin-top:12px}@media(max-width:640px){.aq-controls{grid-template-columns:1fr}}
+
+/* Phase 11.12 predictive chart and evidence table */
+.forecast-svg{display:block;margin:12px 0}.forecast-table-wrap{overflow-x:auto}.forecast-data-table{width:100%;border-collapse:collapse;font-size:12px}.forecast-data-table th,.forecast-data-table td{padding:8px;text-align:left;border-bottom:1px solid var(--line,#ccd9df)}.forecast-legend{font-size:12px}.forecast-legend span{font-weight:700}

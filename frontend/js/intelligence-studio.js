@@ -73,7 +73,8 @@ window.LakeWatchStudio = (() => {
   }
   function populate(){
     const opts=(items, value, display) => items.map(x=>`<option value="${esc(value(x))}">${esc(display(x))}</option>`).join('');
-    for(const id of ['studio-comp-param','forecast-parameter']) byId(id).innerHTML=opts(dataset.parameters.filter(p=>id!=='forecast-parameter'||p.id==='bod'||p.id==='tss'),p=>p.id,p=>p.name);
+    byId('studio-comp-param').innerHTML=opts(dataset.parameters,p=>p.id,p=>p.name);
+    populateForecastParameters();
     byId('studio-comp-period').innerHTML=opts(dataset.periods,p=>p,dateLabel);
     for (const id of ['forecast-station','report-station','incident-station']) {
       const list=opts(dataset.stations,s=>s.id,s=>`${s.name} · ${s.zone}`);
@@ -110,37 +111,76 @@ window.LakeWatchStudio = (() => {
   };
   const fmt=v=>Number.isFinite(v)?v.toFixed(2):'—';
   async function fetchAnnual(){if(annualCache)return annualCache;const r=await fetch('data/historical-annual.json');if(!r.ok)throw Error('Cannot load historical annual archive');annualCache=await r.json();return annualCache;}
+  let forecastRequest=0, forecastReport=null;
+  function populateForecastParameters(){
+    const el=byId('forecast-parameter'), previous=el.value;
+    const list=dataset.parameters.filter(p=>byId('forecast-series').value!=='annual'||['bod','tss'].includes(p.id));
+    el.innerHTML=list.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+    el.value=list.some(p=>p.id===previous)?previous:list[0].id;
+  }
+  function periodKey(x,kind){return kind==='annual'?String(x):`${Math.floor(x/12)}-${String(x%12+1).padStart(2,'0')}`;}
+  function assessForecast(rows,kind,paramId,now=new Date()){
+    const series=rows.filter(r=>r.y!==null).sort((a,b)=>a.x-b.x);
+    const span=series.length?series.at(-1).x-series[0].x+1:0;
+    let reason='', futures=[], mae=null,r2=null;
+    if(series.length<6||span!==series.length)reason='At least six consecutive exact observations are required. Missing periods and qualified laboratory results cannot be used for regression.';
+    else if(kind==='monthly'&&now.getUTCFullYear()*12+now.getUTCMonth()-series.at(-1).x>18)reason='The last exact monthly observation is more than 18 months old.';
+    else {
+      const items=series.map((d,i)=>({x:i,y:d.y})), training=items.slice(0,-2),holdout=items.slice(-2);
+      const test=linearRegression(training), model=linearRegression(items);
+      if(!test||!model)reason='The regression could not be fitted.';
+      else {
+        // Do not silently clamp implausible predictions or holdout errors.
+        const predict=(m,x)=>m.intercept+m.slope*x;
+        mae=holdout.reduce((a,d)=>a+Math.abs(d.y-predict(test,d.x)),0)/holdout.length;r2=model.r2;
+        futures=[1,2].map(delta=>({x:series.at(-1).x+delta,y:predict(model,items.length-1+delta)})).map(d=>({...d,key:periodKey(d.x,kind)}));
+        if(futures.some(d=>!Number.isFinite(d.y)||d.y<0||(paramId==='ph'&&d.y>14))){reason='The linear model produced an implausible value; projections are withheld rather than clipped.';futures=[];}
+      }
+    }
+    return {series,span,reason,futures,mae,r2};
+  }
+  function forecastGraphic(m){
+    const all=[...m.rows,...m.futures], exacts=all.filter(r=>r.y!==null);
+    if(!exacts.length)return '<p>No exact observations to plot. See the reported-value table.</p>';
+    const minX=Math.min(...all.map(r=>r.x)),maxX=Math.max(...all.map(r=>r.x)),maxY=Math.max(0.01,...exacts.map(r=>r.y))*1.12;
+    const X=x=>65+(x-minX)/Math.max(1,maxX-minX)*650,Y=y=>255-y/maxY*220;
+    const ticks=Array.from({length:6},(_,i)=>i*maxY/5);
+    const dates=[...new Set([minX,...Array.from({length:5},(_,i)=>Math.round(minX+(maxX-minX)*i/4)),maxX])];
+    const segment=(a,b,dash=false)=>`<line x1="${X(a.x)}" y1="${Y(a.y)}" x2="${X(b.x)}" y2="${Y(b.y)}" stroke="${dash?'#d97706':'#087d82'}" stroke-width="2.5" ${dash?'stroke-dasharray="7 5"':''}/>`;
+    const dots=(r,forecast=false)=>`<circle cx="${X(r.x)}" cy="${Y(r.y)}" r="4" fill="${forecast?'#d97706':'#087d82'}"><title>${esc(r.key)}: ${esc(forecast?fmt(r.y):r.raw)} ${esc(m.unit)}</title></circle>`;
+    return `<svg class="forecast-svg" viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Observed and projected ${esc(m.parameter)} values over time" style="width:100%;height:auto;background:#fff;color:#17343d;border-radius:8px"><g font-family="Arial" font-size="11" fill="#40566a">${ticks.map(t=>`<line x1="65" x2="715" y1="${Y(t)}" y2="${Y(t)}" stroke="#dce4e9"/><text x="57" y="${Y(t)+4}" text-anchor="end">${Number(t.toPrecision(3))}</text>`).join('')}${dates.map(x=>`<text x="${X(x)}" y="276" text-anchor="middle">${esc(periodKey(x,m.kind))}</text>`).join('')}<text x="65" y="20">${esc(m.unit)}</text><text x="390" y="300" text-anchor="middle">${m.kind==='annual'?'Year':'Reporting month'}</text></g>${m.series.map((r,i)=>i&&r.x-m.series[i-1].x===1?segment(m.series[i-1],r):'').join('')}${m.series.map(r=>dots(r)).join('')}${m.futures.map((r,i)=>segment(i?m.futures[i-1]:m.series.at(-1),r,true)+dots(r,true)).join('')}</svg>`;
+  }
+  function forecastContent(m){
+    return `<div class="model-header"><span class="tag">${m.reason?'Forecast withheld':m.retrospective?'Retrospective model demonstration':'Experimental projection'}</span><strong>${esc(m.label)} · ${esc(m.parameter)}</strong></div>
+      <div class="model-metrics"><div><small>Exact observations</small><strong>${m.series.length}</strong></div><div><small>Holdout MAE</small><strong>${fmt(m.mae)} ${esc(m.unit)}</strong></div><div><small>Fit R²</small><strong>${fmt(m.r2)}</strong></div></div>
+      <p>${m.rows.length} reported period(s) · ${m.rows.filter(r=>r.y===null&&r.raw!=null&&r.raw!=='').length} qualified/non-exact · ${m.span} calendar periods from first to last exact observation.</p>
+      ${forecastGraphic(m)}<p class="forecast-legend"><span style="color:#087d82">━ Exact observations</span> &nbsp; <span style="color:#d97706">┄ Model estimates</span> · Gaps are not interpolated.</p>
+      ${m.reason?`<div class="model-empty"><h4>Forecast withheld</h4><p>${esc(m.reason)}</p></div>`:`<div class="model-forecast">${m.futures.map(f=>`<div><small>${esc(f.key)}</small><strong>${fmt(f.y)} ${esc(m.unit)}</strong></div>`).join('')}</div>`}
+      <p class="model-warning">${m.retrospective?'Historical extrapolation or estimates for elapsed periods; not a present-day forecast.':'Experimental two-period linear extrapolation from the last observation.'} Not an LLDA forecast or safety rating. Short series, seasonality and changing methods may limit reliability; no confidence interval is calculated.</p>
+      <h4>Underlying observations</h4><div class="forecast-table-wrap"><table class="forecast-data-table"><thead><tr><th>Period</th><th>Reported value (${esc(m.unit)})</th><th>Use</th><th>Source</th></tr></thead><tbody>${m.rows.map(r=>`<tr><td>${esc(r.key)}</td><td>${esc(r.raw??'Not reported')}</td><td>${r.y===null?'Excluded':'Exact observation'}</td><td>${r.source?link(r.source,'Original report'):'See dataset sources'}${r.page?' · p. '+esc(r.page):''}</td></tr>`).join('')}${m.futures.map(r=>`<tr><td>${esc(r.key)}</td><td>${fmt(r.y)}</td><td>Model estimate (not measured)</td><td>Linear regression</td></tr>`).join('')}</tbody></table></div>`;
+  }
   async function runForecast(showBusy=true){
-    const output=byId('forecast-result'); if(showBusy) output.innerHTML='<p class="hint">Checking data completeness…</p>';
+    const request=++forecastRequest,output=byId('forecast-result');forecastReport=null;byId('forecast-pdf').disabled=true;
+    if(showBusy)output.innerHTML='<p class="hint">Checking data completeness…</p>';
     const kind=byId('forecast-series').value,paramId=byId('forecast-parameter').value,stationId=byId('forecast-station').value;
     byId('forecast-station-wrap').hidden=kind==='annual';
-    let series=[],label='',unitText=unit(paramId),lastYear=null;
-    if(kind==='annual') {
-      try {const archive=await fetchAnnual();series=archive.lakeAnnual.map(row=>({key:row.year,x:row.year,y:exact(row[paramId])})).filter(x=>x.y!==null); label='Lake-wide annual average (historical)';}
-      catch(e){output.textContent=e.message;return;}
-    }else {
-      const station=st(stationId);series=(station?.samples||[]).map(s=>({key:s.period,x:monthNo(s.period),y:exact(s.values[paramId])})).filter(x=>x.y!==null);
-      label=`${station?.name||'Station'} monthly observations`;
+    let rows=[],label='',unitText=param(paramId)?.unit||'';
+    if(kind==='annual'){
+      try{const archive=await fetchAnnual();if(request!==forecastRequest)return;rows=archive.lakeAnnual.map(r=>({key:String(r.year),x:r.year,raw:r[paramId],y:exact(r[paramId]),source:archive.metadata.lakeAnnualSourceUrl,page:234}));label='Lake-wide annual averages (1990–2000)';}
+      catch(e){if(request===forecastRequest)output.textContent=e.message;return;}
+    }else{
+      const station=st(stationId);label=`${station?.name||'Station'} · ${station?.zone||''} · monthly observations`;
+      rows=(station?.samples||[]).filter(r=>/^\d{4}-\d{2}$/.test(r.period)).map(r=>({key:r.period,x:monthNo(r.period),raw:r.values?.[paramId],y:exact(r.values?.[paramId]),source:r.sources?.[paramId],page:r.sourcePages?.[paramId]}));
     }
-    series.sort((a,b)=>a.x-b.x);
-    const span=series.length>1?series.at(-1).x-series[0].x:null;
-    if(series.length<6||span!==series.length-1){output.innerHTML=`<div class="model-empty"><span>Not enough consecutive observations</span><h4>Forecast withheld</h4><p>${esc(label)} has ${series.length} exact data points${span!==null?`, spanning ${span+1} potential periods`:''}. At least 6 consecutive like-for-like ${kind==='annual'?'annual':'monthly'} measurements are required; gaps and &lt; detection-limit values are excluded.</p><p>Record more dated observations through Manage Data to unlock a monthly forecast. The existing historical chart remains available for descriptive exploration.</p></div>`;return;}
-    if(kind==='monthly'){
-      const latest=series.at(-1).x, current=(new Date().getUTCFullYear()*12+new Date().getUTCMonth());
-      if(current-latest>18){output.innerHTML='<p class="model-empty">Monthly observations are too old for a current forecast (last exact observation is over 18 months old). The model is intentionally withheld.</p>';return;}
-    }
-    const withIndex=series.map((d,i)=>({x:i,y:d.y}));const training=withIndex.slice(0,-2),holdout=withIndex.slice(-2);
-    const testModel=linearRegression(training),model=linearRegression(withIndex);if(!model||!testModel)return;
-    const mae=holdout.reduce((a,d)=>a+Math.abs(d.y-testModel.predict(d.x)),0)/holdout.length;
-    const recent=series.at(-1);
-    const futures=[1,2].map(delta=>{const x=withIndex.length-1+delta;let time;
-      if(kind==='annual'){time=String(recent.x+delta);}else{const idx=recent.x+delta;time=`${Math.floor(idx/12)}-${String(idx%12+1).padStart(2,'0')}`;}
-      return {time,value:model.predict(x)};});
-    const retrospective=kind==='annual';
-    output.innerHTML=`<div class="model-header"><span class="tag ${retrospective?'':'tag--teal'}">${retrospective?'Retrospective model demonstration':'Experimental forward projection'}</span><strong>${esc(label)}</strong></div>
-      <div class="model-metrics"><div><small>Available observations</small><strong>${series.length}</strong></div><div><small>Holdout MAE</small><strong>${fmt(mae)} ${esc(unitText)}</strong></div><div><small>Fit R²</small><strong>${fmt(model.r2)}</strong></div></div>
-      <div class="model-forecast">${futures.map(f=>`<div><small>${esc(f.time)}</small><strong>${fmt(f.value)} ${esc(unitText)}</strong></div>`).join('')}</div>
-      <p class="model-warning">${retrospective?'Model extrapolates only immediately beyond '+recent.key+'. These are historical retrospective estimates, NOT a forecast for the present-day lake.':'An experimental two-period linear extrapolation, not an LLDA forecast or a substitute for future sampling.'} Based on a simple linear regression; short series, seasonality, outliers and changing methods can make predictions unreliable. No confidence interval or safety rating is implied.</p>`;
+    if(request!==forecastRequest)return;
+    rows.sort((a,b)=>a.x-b.x);const result=assessForecast(rows,kind,paramId),now=new Date();
+    forecastReport={...result,rows,kind,label,parameter:param(paramId)?.name||paramId,unit:unitText,retrospective:kind==='annual'||result.futures.some(r=>r.x<=now.getUTCFullYear()*12+now.getUTCMonth())};
+    output.innerHTML=forecastContent(forecastReport);byId('forecast-pdf').disabled=false;
+  }
+  function printForecast(){
+    if(!forecastReport)return;const m=forecastReport,frame=document.createElement('iframe');frame.title='Predictive analytics report';frame.style.cssText='position:fixed;left:0;bottom:0;width:1px;height:1px;border:0';document.body.appendChild(frame);
+    const doc=frame.contentDocument;doc.open();doc.write(`<!doctype html><html><head><title>LakeWatch Laguna – Predictive Analytics</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial;color:#17343d}header{display:flex;align-items:center;gap:15px;border-bottom:3px solid #087d82;padding-bottom:9px}header img{width:52px;height:52px;object-fit:contain}h1{margin:0;font-size:23px}h4{font-size:15px;margin:12px 0 6px}p{line-height:1.5}.model-metrics,.model-forecast{display:flex;gap:24px;margin:10px 0}.model-metrics small,.model-forecast small{display:block}.model-metrics strong,.model-forecast strong{font-size:17px}.model-warning,.model-empty{background:#f0f5f5;padding:10px;break-inside:avoid}.forecast-svg{max-height:94mm}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccd9df;padding:5px;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}li{overflow-wrap:anywhere}@media print{*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><header><img src="${esc(new URL('assets/lakewatch-laguna-logo.png',document.baseURI).href)}" alt="LakeWatch logo"><div><h1>LakeWatch Laguna</h1>Predictive Water Quality Analytics Report</div></header>${forecastContent(m)}<h4>Source references</h4><ul>${[...new Set(m.rows.map(r=>r.source).filter(Boolean))].map(u=>`<li>${esc(u)}</li>`).join('')||'<li>See the application Data Sources documentation.</li>'}</ul><p>Generated ${esc(new Date().toLocaleString())}. Academic model demonstration.</p></body></html>`);doc.close();
+    const win=frame.contentWindow;let started=false;const go=()=>{if(started)return;started=true;win.focus();win.print();};win.addEventListener('afterprint',()=>frame.remove(),{once:true});const img=doc.querySelector('img');if(img&&!img.complete){img.addEventListener('load',go,{once:true});img.addEventListener('error',go,{once:true});setTimeout(go,1500);}else go();
   }
   async function loadIncidents(){
     try {incidents=(await window.LakeWatchAPI.incidents()).records||[];}
@@ -280,9 +320,10 @@ window.LakeWatchStudio = (() => {
       renderComparisonPicker();
       renderComparison();
     });
-    byId('forecast-series').addEventListener('change',()=>{byId('forecast-station-wrap').hidden=byId('forecast-series').value==='annual';runForecast();});
+    byId('forecast-series').addEventListener('change',()=>{populateForecastParameters();runForecast();});
     for(const id of ['forecast-parameter','forecast-station'])byId(id).addEventListener('change',()=>runForecast());
     byId('forecast-run').addEventListener('click',()=>runForecast());
+    byId('forecast-pdf').addEventListener('click',printForecast);
     byId('show-incidents').addEventListener('change',e=>mapManager?.showIncidents(e.target.checked));
     byId('incident-form').addEventListener('submit',async e=>{
       e.preventDefault();const form=e.currentTarget;const item=Object.fromEntries(new FormData(form).entries());item.stationId=item.stationId||null;
