@@ -98,7 +98,9 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 
 ## 7. Reports
 
-**Purpose:** Preview and download a source-labeled water-quality PDF.
+**Purpose:** Compare stations in a six-parameter matrix and preview/download a source-labeled detailed PDF.
+
+Use **Station water quality summary** to select monthly, quarterly or annual periods. Multi-month summaries average exact reported values only and show sample counts; qualified observations are excluded from means, not replaced with zero. Select **Individual monthly values** to see original measurements. Check coverage, download CSV, or print/save the landscape summary as PDF. The detailed report builder remains available below.
 
 1. Choose **Report scope** (selected station or all reporting stations).
 2. Choose **Monitoring station** if applicable, then **Reporting month** and **Parameter** (or all parameters).

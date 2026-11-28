@@ -299,7 +299,7 @@ window.LakeWatchStudio = (() => {
     byId('report-preview-btn').addEventListener('click',renderReport);
     byId('report-pdf-btn').addEventListener('click',createPDF);
   }
-  function initialize(options){if(initiated)return;initiated=true;dataset=options.dataset;populate();bind();loadIncidents();loadContext();loadWeather();}
+  function initialize(options){if(initiated)return;initiated=true;dataset=options.dataset;window.LakeWatchReportSummary?.initialize(dataset);populate();bind();loadIncidents();loadContext();loadWeather();}
   function setMapManager(manager){mapManager=manager;if(mapManager)mapManager.setIncidentReports(incidents);}
   function selectReport({stationId,period}){if(!dataset)return;
     if(stationId&&st(stationId))byId('report-station').value=stationId;

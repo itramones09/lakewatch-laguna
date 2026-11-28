@@ -88,6 +88,7 @@
       id: "reports", label: "Reports", kicker: "Prepare a document", title: "Water Quality Reports",
       summary: "Create a professional PDF with the observations, dates and available provenance notes you select.",
       steps: [
+        ["Station water quality summary", "Choose monthly, quarterly or annual reporting frequency and period. Station summary shows exact monthly values or available-month means; Individual monthly values preserves each reading. Download CSV or Print / Save summary PDF. Check coverage and qualifiers."],
         ["Choose report scope", "Select Selected monitoring station or All reporting stations."],
         ["Set station and period", "If you chose one station, choose it; then set Reporting month and Parameter (or All six parameters)."],
         ["Select optional sections", "Use Include incident summary and Include contextual-data summary as appropriate."],

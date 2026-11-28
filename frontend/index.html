@@ -36,6 +36,7 @@
 <script defer="" src="js/live-sync.js"></script>
 <script defer="" src="js/data-manager.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script defer src="js/report-summary.js"></script>
 <script defer src="js/intelligence-studio.js"></script>
 <script defer src="js/mode.js"></script>
 <script defer src="js/user-manual.js"></script>
@@ -473,6 +474,11 @@
 
 <section aria-labelledby="reports-title" class="view" hidden id="view-reports">
 <div class="page-intro"><div><p class="eyebrow">Publishing Studio</p><h2 id="reports-title">Water Quality Reports</h2><p class="module-caption">Generate a professional, source-labeled PDF for academic and environmental reporting.</p></div><span class="tag tag--teal">Export-ready</span></div>
+<section class="panel matrix-panel" aria-labelledby="matrix-title">
+<h3 id="matrix-title">Station water quality summary</h3><p class="module-caption">Compare monitoring stations across all six parameters. Select a reporting period or review individual monthly readings.</p>
+<div class="matrix-controls"><label>Reporting frequency<select id="matrix-granularity" class="control-select"><option value="month">Monthly</option><option value="quarter">Quarterly</option><option value="year">Annual</option></select></label><label>Reporting period<select id="matrix-period" class="control-select"></select></label><label>Display<select id="matrix-method" class="control-select"><option value="mean">Station summary</option><option value="monthly">Individual monthly values</option></select></label><label class="toggle-line"><input type="checkbox" id="matrix-include-empty"> Include stations without readings</label></div>
+<p id="matrix-coverage" role="status"></p><p id="matrix-note" class="module-caption"></p><div class="table-scroll matrix-scroll" tabindex="0" role="region" aria-label="Station summary table"><table id="matrix-table"></table></div><div class="matrix-actions"><button type="button" class="button" id="matrix-csv">Download summary CSV</button><button type="button" class="button button--primary" id="matrix-print">Print / Save summary PDF</button></div><p id="matrix-status" role="status"></p><details><summary>Sources and provenance</summary><ul id="matrix-sources"></ul></details></section>
+<h3 class="matrix-detail-heading">Detailed PDF report builder</h3>
 <div class="report-designer"><div class="panel studio-controls report-controls"><h3>Build a report</h3><label>Report scope<select id="report-scope" class="control-select"><option value="station">Selected monitoring station</option><option value="all">All reporting stations</option></select></label><label>Monitoring station<select id="report-station" class="control-select"></select></label><label>Reporting month<select id="report-period" class="control-select"></select></label><label>Parameter<select id="report-parameter" class="control-select"><option value="all">All six parameters</option></select></label><label class="toggle-line"><input type="checkbox" checked id="report-incidents"> Include incident summary</label><label class="toggle-line"><input type="checkbox" checked id="report-context"> Include contextual-data summary</label><button type="button" id="report-preview-btn" class="button">Preview report</button><button type="button" id="report-pdf-btn" class="button button--primary">Download PDF report</button><p id="report-status" class="studio-status" role="status"></p><p class="module-caption">Report will include dates, data limitations and citations. Browser Print → Save as PDF is available if the PDF library cannot load.</p></div>
 <div class="report-preview-shell"><div id="report-preview" class="report-sheet" aria-live="polite"><h3>Report preview</h3><p>Select a reporting scope and preview your PDF.</p></div></div></div>
 </section>
