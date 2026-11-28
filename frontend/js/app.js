@@ -489,6 +489,7 @@
       const manager=ensureDataManager();
       await manager.ready;
       window.LakeWatchStudio?.initialize({dataset});
+      window.LakeWatchAnalyticsOverview?.initialize({dataset});
       renderDirectory();
       renderProfile();
       renderMapStationPanel();

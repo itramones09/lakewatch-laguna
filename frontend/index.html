@@ -27,6 +27,7 @@
 <script defer="" src="js/parameter-palette.js"></script>
 <script defer="" src="js/map-module.js"></script>
 <script defer="" src="js/analytics-module.js"></script>
+<script defer src="js/analytics-overview.js"></script>
 <script defer="" src="js/historical-module.js"></script>
 <script defer="" src="js/explorer-module.js"></script>
 <script defer="" src="js/theme-module.js"></script>
@@ -292,6 +293,14 @@
 </div>
 <span class="tag tag--teal">LLDA · Historical reports</span>
 </div>
+<article class="panel aq-panel" aria-labelledby="aq-title">
+<div class="panel-heading"><div><h3 id="aq-title">All-station water quality comparison</h3><p class="module-caption">Compare all six parameters across reporting stations in one interactive graph.</p></div><span class="tag tag--teal">Line chart</span></div>
+<div class="aq-controls"><label>Reporting frequency<select id="aq-frequency" class="control-select"><option value="month">Monthly</option><option value="quarter">Quarterly</option><option value="year">Annual</option></select></label><label>Reporting period<select id="aq-period" class="control-select"></select></label><label>Scale<select id="aq-scale" class="control-select"><option value="raw">Actual values</option><option value="normalized">Normalized (0–1)</option></select></label></div>
+<fieldset class="aq-fieldset"><legend>Water quality parameters</legend><div id="aq-parameters" class="aq-parameters"></div></fieldset>
+<div id="aq-legend" class="aq-legend"></div><div class="aq-chart-scroll"><div id="aq-chart"></div></div><p id="aq-note" class="module-caption" aria-live="polite"></p>
+<div class="aq-actions"><button id="aq-all" class="button" type="button">Show all parameters</button><button id="aq-print" class="button button--primary" type="button" disabled>Print / Save graph as PDF</button></div>
+<details><summary>View underlying reported values</summary><div class="table-scroll"><table id="aq-table"></table></div></details>
+</article>
 <div aria-label="Analytics filters" class="panel analytics-toolbar">
 <div class="analytics-filter"><label for="analytics-station">Monitoring station</label>
 <select aria-label="Choose station for historical trend" class="control-select" id="analytics-station"><option>Loading stations...</option></select></div>

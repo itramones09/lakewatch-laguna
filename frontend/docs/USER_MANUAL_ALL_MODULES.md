@@ -60,6 +60,8 @@ The manual deliberately does **not** disable, dim, or block the main webpage. On
 
 ## 4. Analytics
 
+**All-station comparison:** Select monthly, quarterly or annual period, check parameters, and choose actual or normalized values. Print / Save graph as PDF opens a standalone landscape report including the selected graph, underlying values, coverage and sources. Select Save as PDF in the browser print dialog. Monthly upper limits use open markers; aggregate means exclude qualified values. Normalized constant or wholly non-exact series are omitted.
+
 **Purpose:** Trends, matched-date comparisons, historical context and cautious predictive analytics.
 
 1. Select a **Monitoring station**, **Water quality parameter** and **Comparison month** in the main analytics toolbar.
