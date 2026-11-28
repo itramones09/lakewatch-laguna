@@ -187,7 +187,7 @@ window.LakeWatchStudio = (() => {
     const stations=scope==='all'?dataset.stations:[st(stationId)].filter(Boolean);
     const params=dataset.parameters.filter(p=>pid==='all'||pid===p.id);
     const rows=[];for(const station of stations)for(const p of params){let raw=rawValue(station,period,p.id);rows.push({station:station.name,zone:station.zone,param:p.name,short:p.short,value:readableValue(raw,p.id),raw,source:station.samples.find(x=>x.period===period)?.provenance?.[p.id]||null});}
-    const sources=[dataset.metadata.source2026Url,dataset.metadata.source2023Url].filter(Boolean);
+    const sources=[...new Set(Object.values(dataset.metadata.quarterlySources||{}).map(s=>s.url))].filter(Boolean);
     return {scope,stations,period,params,rows,sources,includeIncidents:byId('report-incidents').checked,includeContext:byId('report-context').checked};
   }
   function renderReport(){if(!dataset)return;const d=gatherReport();byId('report-station').disabled=d.scope==='all';

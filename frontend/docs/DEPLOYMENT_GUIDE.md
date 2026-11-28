@@ -33,7 +33,7 @@ GitHub's interface and deployment policies can change. Check current Pages docum
 - The interactive map centers near Laguna de Bay and station tags can be clicked or selected from the locator.
 - OpenStreetMap attribution is displayed. A schematic boundary, if shown, is identified as approximate.
 - Charts reflect selected station/parameter; annual and monthly series remain separated.
-- Active 16 / Archived 3 and 186 monthly records appear correctly.
+- Active 16 / Archived 3 and 789 monthly records appear correctly.
 - CSV export downloads all filtered results, not only the current page.
 - Light, Dark and System themes work; persistence across reload works on the host's origin.
 - Layouts have no unintended horizontal page overflow on desktop and mobile widths.

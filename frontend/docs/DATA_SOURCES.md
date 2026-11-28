@@ -8,13 +8,23 @@
 **Document:** Quarterly Water Quality Report, Laguna Lake and Tributary Rivers, October to December 2023  
 **URL:** https://www.llda.gov.ph/wp-content/uploads/dox/waterqualityrpt/2023/q4_2023.pdf
 
-Selected stations (official IDs and names):
+Lake stations (official IDs and names):
 
 - Stn. I — Central West Bay
 - Stn. II — East Bay
 - Stn. IV — Central Bay
 - Stn. V — Northern West Bay
 - Stn. VIII — South Bay
+- Stn. XIII — Taytay
+- Stn. XV — San Pedro
+- Stn. XVI — Sta. Rosa
+- Stn. XVII — Fish Sanctuary
+- Stn. XVIII — Pagsanjan
+- Stn. XIX — Muntinlupa
+- Stn. XX — GEMS
+- Stn. XXI — Cardona
+- Stn. XXII — Jala-jala
+- Stn. XXIII — Lumban
 
 The first table in the report contains the BOD and DO readings. The second lake-station table contains pH, nitrate, inorganic phosphate and total suspended solids (TSS) readings. The app preserves three monthly observations per station, October/November/December 2023.
 
@@ -37,4 +47,4 @@ The lake geometry and basemap, when displayed, come from OpenStreetMap contribut
 
 ## November 20, 2026 historical expansion
 
-See `HISTORICAL_DATA_METHODOLOGY.md` and `STATION_CHRONOLOGY.md` for the newest 1990–2026 historical scope, 186 monthly + 69 annual values, and the unverified III/VI/VII location caveats. This section supersedes earlier statements that the dataset has no values before 2023.
+See `HISTORICAL_DATA_METHODOLOGY.md` and `STATION_CHRONOLOGY.md` for the newest 1990–2026 historical scope, 789 monthly + 69 annual values, and the unverified III/VI/VII location caveats. This section supersedes earlier statements that the dataset has no values before 2023.

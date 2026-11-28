@@ -24,7 +24,7 @@ window.LakeWatchExplorer = (() => {
       const provenance=sample?.provenance?.[param.id] || null;
       const sourceKind=provenance?.sourceKind || 'online';
       const sourceURL=provenance ? (provenance.sourceKind==='offline'?'':provenance.sourceUrl || sample?.sources?.[param.id] || '')
-        : raw!==null ? (sample?.sources?.[param.id] || (period <= '2023-12' ? dataset.metadata.source2023Url : dataset.metadata.source2026Url)) : '';
+        : raw!==null ? (sample?.sources?.[param.id] || dataset.metadata.quarterlySources?.[period]?.url || '') : '';
       rows.push({stationId:station.id,station:station.name,zone:station.zone,period,parameterId:param.id,parameter:param.name,value:raw,unit:param.unit,kind:classify(raw),
         sourceKind:raw===null?'':sourceKind,source:sourceURL,title:provenance?.title || '',
         organization:provenance?.sourceOrganization || '',publicationDate:provenance?.sourceDate || '',

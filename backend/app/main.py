@@ -675,7 +675,9 @@ def pdf_report(
                 ref=provenance.get('sourceUrl') or ' / '.join(str(provenance.get(k) or '') for k in ('sourceOrganization','sourceDate','sourceReference'))
                 if ref.strip():citations.add(ref)
             else:
-                source='LLDA Q2 2026' if period=='2026-06' else 'LLDA Q4 2023' if period.startswith('2023-') else 'Published historical record'
+                entry=data['metadata'].get('quarterlySources',{}).get(period,{})
+                source='LLDA '+entry['title'] if entry else 'Source not recorded'
+                if entry.get('url'): citations.add(entry['url'])
             station_name=station['name']+' / '+station['zone']
             table_rows.append([Paragraph(fmt(station_name),styles['LakeCell']),
                 Paragraph(fmt(p['name']),styles['LakeCell']),Paragraph(fmt(value),styles['LakeCell']),Paragraph(fmt(source),styles['LakeCell'])])

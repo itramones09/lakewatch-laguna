@@ -195,8 +195,8 @@
     const s = currentStation();
     if (!s || !dataset) return;
     const root = $("station-profile");
-    const measurementSource = selectedPeriod > "2023-12" ? dataset.metadata.source2026Url : dataset.metadata.source2023Url;
-    const sourceLabel = selectedPeriod > "2023-12" ? "Q2 2026" : "Q4 2023";
+    const measurementSource = dataset.metadata.quarterlySources?.[selectedPeriod]?.url || "";
+    const sourceLabel = dataset.metadata.quarterlySources?.[selectedPeriod]?.title || "Source not recorded";
     const provenanceRows = Object.entries(sampleAt(s)?.provenance||{});
     const imported = provenanceRows.length > 0;
     const provenanceDetails = provenanceRows.map(([parameter,entry]) => {

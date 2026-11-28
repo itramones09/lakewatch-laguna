@@ -42,7 +42,7 @@ Data modules are separated by responsibility: `app.js` manages navigation and sh
 
 **Monitoring registry:** 19 identifiers are represented in the application. Sixteen have imported June 2026 parameter readings, and three historical identifiers (III, VI, VII) have no imported recent records and no independently verified site position. “Active” and “Archived” refer strictly to the latest imported dataset, not to agency confirmation of operational status.
 
-**Monthly readings:** 90 values from five stations across three months in Q4 2023 plus 96 values from 16 stations in June 2026, for 186 source-reported measurements in six parameter categories: dissolved oxygen, biochemical oxygen demand, pH, nitrate, inorganic phosphate and total suspended solids.
+**Monthly readings:** 135 values from Q1 2020, 270 from Q4 2023, 288 from Q1 2026 and 96 from June 2026, for 789 source-reported measurements in six parameter categories: dissolved oxygen, biochemical oxygen demand, pH, nitrate, inorganic phosphate and total suspended solids.
 
 **Long-term archive:** 21 individual lake-wide annual BOD/TSS values for 1990–2000 and 48 station annual BOD/TSS values for 2009–2012. These are separately sourced and plotted separately from 2023/2026 station-month values. The archive contains **255 reported numeric/qualified parameter records total**, but does not provide continuous monthly coverage for 1990–2026.
 

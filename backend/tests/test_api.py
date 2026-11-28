@@ -58,4 +58,4 @@ def test_backend_login_and_shared_write():
         assert len(client.get('/api/audit', headers=headers).json()['rows']) == 2
         unknown = client.post('/api/observations/batch', headers=headers, json={'readings': [{**read, 'stationId': 'UNREAL'}]})
         assert unknown.status_code == 422
-        assert len(BASE_VALUES) == 186
+        assert len(BASE_VALUES) == 789

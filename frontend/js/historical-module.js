@@ -27,7 +27,7 @@ window.LakeWatchHistorical = (() => {
       const labelName=parameter?.short ? `${chartName} (${parameter.short})` : chartName;
       const lake=archive.lakeAnnual.filter(r=>number(r[selectedParam])!==null).map(r=>({x:r.year,text:String(r.year),value:r[selectedParam],source:'Lake-wide annual mean (ILEC)',href:archive.metadata.lakeAnnualSourceUrl}));
       const annual=archive.stationAnnual.filter(r=>r.stationId===stationId&&number(r[selectedParam])!==null).map(r=>({x:r.year,text:String(r.year),value:r[selectedParam],source:`${station.name} annual average (LLDA)`,href:archive.metadata.stationAnnualSourceUrl}));
-      const monthly=(station.samples||[]).map(r=>({x:monthToYear(r.period),text:r.period,value:r.values[selectedParam],source:r.provenance?.[selectedParam] ? `${station.name} monthly measurement (locally imported)` : `${station.name} monthly measurement (LLDA)`,href:r.sources?.[selectedParam] || (r.period>"2023-12"?dataset.metadata.source2026Url:dataset.metadata.source2023Url)}));
+      const monthly=(station.samples||[]).map(r=>({x:monthToYear(r.period),text:r.period,value:r.values[selectedParam],source:r.provenance?.[selectedParam] ? `${station.name} monthly measurement (locally imported)` : `${station.name} monthly measurement (LLDA)`,href:r.sources?.[selectedParam] || dataset.metadata.quarterlySources?.[r.period]?.url}));
       const recent=monthly.filter(r=>number(r.value)!==null);
       const all=[...lake,...annual,...recent];
       const numRaw=all.map(v=>number(v.value)).filter(v=>v!==null);
